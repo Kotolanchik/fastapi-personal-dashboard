@@ -19,6 +19,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
+    role = Column(String(32), nullable=False, default="user")
 
     health_entries = relationship("HealthEntry", back_populates="user")
     finance_entries = relationship("FinanceEntry", back_populates="user")

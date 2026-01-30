@@ -140,6 +140,7 @@ class UserLogin(BaseModel):
 class UserRead(UserBase):
     id: int
     created_at: datetime
+    role: str
 
     class Config:
         orm_mode = True
@@ -152,6 +153,10 @@ class Token(BaseModel):
 
 class Message(BaseModel):
     status: str
+
+
+class UserRoleUpdate(BaseModel):
+    role: str = Field(min_length=3, max_length=32)
 
 
 class CorrelationItem(BaseModel):
