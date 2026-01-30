@@ -347,3 +347,42 @@ class WeeklyReportResponse(BaseModel):
     summary: dict  # sphere -> SphereSummary or dict of metrics
     insight: Optional[str] = None
     generated_at: datetime
+
+
+# Trend this month (dashboard)
+class TrendThisMonthItem(BaseModel):
+    metric: str
+    label: str
+    value: float
+    direction: str  # "up" | "down" | "neutral"
+
+
+class TrendThisMonthResponse(BaseModel):
+    metrics: list[TrendThisMonthItem]
+
+
+# Insight of the week (dashboard)
+class InsightOfTheWeekResponse(BaseModel):
+    insight: Optional[str] = None
+
+
+# Weekday and linear trends (best/worst weekday, 14/30 day trends)
+class BestWorstWeekdayItem(BaseModel):
+    metric: str
+    best_weekday: str
+    worst_weekday: str
+    best_value: float
+    worst_value: float
+
+
+class LinearTrendItem(BaseModel):
+    metric: str
+    slope: float
+    direction: str  # "up" | "down" | "neutral"
+    days: int
+
+
+class WeekdayTrendsResponse(BaseModel):
+    best_worst_weekday: list[BestWorstWeekdayItem]
+    trends_14: list[LinearTrendItem]
+    trends_30: list[LinearTrendItem]

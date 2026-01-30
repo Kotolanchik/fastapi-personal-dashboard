@@ -6,6 +6,13 @@ All notable changes to the project are documented in this file.
 
 ### Added
 
+- **Analytics & insights (2.5)**  
+  - **analytics.py**: Best/worst weekday for sleep and productivity (aggregation by weekday); linear trend over last 14/30 days for sleep, expenses, deep work; new insights: expenses grow faster than income, sleep worse after weekends (Monday vs rest), focus higher on days with ≥6h sleep; `trend_this_month()` (this month vs previous, ↑/↓); `insight_of_the_week()`; `weekday_and_trends_payload()` (best/worst weekday + trends_14/trends_30).  
+  - **recommender.py**: Rules for expenses vs income trend (30-day slope), sleep worse after weekends (Monday), focus higher on days with ≥6h sleep.  
+  - **API**: `GET /analytics/trend-this-month`, `GET /analytics/insight-of-the-week`, `GET /analytics/weekday-trends`; schemas TrendThisMonthResponse, InsightOfTheWeekResponse, WeekdayTrendsResponse.  
+  - **Dashboard**: Block «Trend this month» (↑/↓ key metrics); «Insight of the week» above existing insights; «Last week in numbers» card with link to weekly report; «By weekday & recent trends» (best/worst weekday, 14/30-day trend directions).  
+  - **Weekly report**: Page titled «Last week in numbers» (sums, averages, one insight); explicit link from dashboard.
+
 - **Goals (2.1)**  
   - Backend: `user_goals` table, CRUD API `/goals`, progress computation (current vs target per sphere).  
   - Frontend: Goals in Settings (add/remove up to 2 goals), Goals progress block on Dashboard.  

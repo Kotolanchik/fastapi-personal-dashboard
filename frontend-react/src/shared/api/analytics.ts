@@ -40,3 +40,48 @@ export const getWeeklyReport = () =>
   api
     .get<WeeklyReport>('/analytics/weekly-report')
     .then((res) => res.data)
+
+export type TrendThisMonthItem = {
+  metric: string
+  label: string
+  value: number
+  direction: 'up' | 'down' | 'neutral'
+}
+
+export const getTrendThisMonth = () =>
+  api
+    .get<{ metrics: TrendThisMonthItem[] }>('/analytics/trend-this-month')
+    .then((res) => res.data)
+
+export type InsightOfTheWeekResponse = { insight: string | null }
+
+export const getInsightOfTheWeek = () =>
+  api
+    .get<InsightOfTheWeekResponse>('/analytics/insight-of-the-week')
+    .then((res) => res.data)
+
+export type BestWorstWeekdayItem = {
+  metric: string
+  best_weekday: string
+  worst_weekday: string
+  best_value: number
+  worst_value: number
+}
+
+export type LinearTrendItem = {
+  metric: string
+  slope: number
+  direction: string
+  days: number
+}
+
+export type WeekdayTrendsResponse = {
+  best_worst_weekday: BestWorstWeekdayItem[]
+  trends_14: LinearTrendItem[]
+  trends_30: LinearTrendItem[]
+}
+
+export const getWeekdayTrends = () =>
+  api
+    .get<WeekdayTrendsResponse>('/analytics/weekday-trends')
+    .then((res) => res.data)

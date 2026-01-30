@@ -11,7 +11,18 @@ import {
   YAxis,
 } from 'recharts'
 
-import { getCorrelations, getInsights, getRecommendations } from '../../shared/api/analytics'
+import {
+  getCorrelations,
+  getInsights,
+  getRecommendations,
+  getTrendThisMonth,
+  getInsightOfTheWeek,
+  getWeekdayTrends,
+  type InsightOfTheWeekResponse,
+  type TrendThisMonthItem,
+  type BestWorstWeekdayItem,
+  type LinearTrendItem,
+} from '../../shared/api/analytics'
 import { downloadCsv, type ExportCategory } from '../../shared/api/export'
 import { useToast } from '../../shared/components/Toast'
 import {
@@ -21,6 +32,7 @@ import {
   type ProductivityEntry,
   fetchEntries,
 } from '../../shared/api/entries'
+import { Link } from 'react-router-dom'
 import { getGoals, type GoalProgress } from '../../shared/api/goals'
 
 const toChart = (data: HealthEntry[]) =>
@@ -93,6 +105,18 @@ export const DashboardPage = () => {
     queryFn: getRecommendations,
   })
   const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals })
+  const trendThisMonth = useQuery({
+    queryKey: ['trend-this-month'],
+    queryFn: () => getTrendThisMonth().then((d: { metrics: TrendThisMonthItem[] }) => d.metrics),
+  })
+  const insightOfTheWeek = useQuery({
+    queryKey: ['insight-of-the-week'],
+    queryFn: () => getInsightOfTheWeek().then((d: InsightOfTheWeekResponse) => d.insight),
+  })
+  const weekdayTrends = useQuery({
+    queryKey: ['weekday-trends'],
+    queryFn: getWeekdayTrends,
+  })
 
   const isLoading =
     health.isLoading ||
@@ -102,7 +126,10 @@ export const DashboardPage = () => {
     correlations.isLoading ||
     insights.isLoading ||
     recommendations.isLoading ||
-    goalsQuery.isLoading
+    goalsQuery.isLoading ||
+    trendThisMonth.isLoading ||
+    insightOfTheWeek.isLoading ||
+    weekdayTrends.isLoading
 
   if (isLoading) {
     return (
@@ -197,6 +224,53 @@ export const DashboardPage = () => {
           </button>
         </div>
       </div>
+      <div className="card">
+        <h3>Last week in numbers</h3>
+        <p className="muted">Sums, averages, and one insight for the past 7 days.</p>
+        <Link to="/weekly-report" className="primary">
+          View last week →
+        </Link>
+      </div>
+      {trendThisMonth.data && trendThisMonth.data.length > 0 && (
+        <section className="card">
+          <h3>Trend this month</h3>
+          <p className="muted">This month vs previous month (↑ up, ↓ down).</p>
+          <div className="grid cards" style={{ marginTop: '0.5rem' }}>
+            {trendThisMonth.data.map((m: TrendThisMonthItem) => (
+              <div key={m.metric} className="card">
+                <h4>{m.label}</h4>
+                <p className="metric">
+                  {typeof m.value === 'number' && !Number.isInteger(m.value) ? m.value.toFixed(1) : m.value}
+                  {m.direction === 'up' && ' ↑'}
+                  {m.direction === 'down' && ' ↓'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {weekdayTrends.data && (weekdayTrends.data.best_worst_weekday?.length > 0 || weekdayTrends.data.trends_14?.length > 0 || weekdayTrends.data.trends_30?.length > 0) && (
+        <section className="card">
+          <h3>By weekday & recent trends</h3>
+          {weekdayTrends.data.best_worst_weekday?.length > 0 && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              {weekdayTrends.data.best_worst_weekday.map((b: BestWorstWeekdayItem) => (
+                <p key={b.metric} className="muted" style={{ margin: '0.25rem 0' }}>
+                  <strong>{b.metric.replace(/_/g, ' ')}:</strong> best {b.best_weekday} ({b.best_value}), worst {b.worst_weekday} ({b.worst_value})
+                </p>
+              ))}
+            </div>
+          )}
+          {(weekdayTrends.data.trends_14?.length > 0 || weekdayTrends.data.trends_30?.length > 0) && (
+            <p className="muted" style={{ margin: 0 }}>
+              Last 14/30 days: {[...(weekdayTrends.data.trends_14 || []), ...(weekdayTrends.data.trends_30 || [])]
+                .filter((t: LinearTrendItem, i: number, a: LinearTrendItem[]) => a.findIndex(x => x.metric === t.metric) === i)
+                .map((t: LinearTrendItem) => `${t.metric} ${t.direction === 'up' ? '↑' : t.direction === 'down' ? '↓' : '→'}`)
+                .join(', ')}
+            </p>
+          )}
+        </section>
+      )}
       <section className="grid cards">
         <div className="card">
           <h4>Sleep avg</h4>
@@ -301,6 +375,12 @@ export const DashboardPage = () => {
         </div>
         <div className="card">
           <h3>Insights</h3>
+          {insightOfTheWeek.data && (
+            <div className="insight-of-the-week" style={{ marginBottom: '0.75rem', padding: '0.5rem', background: 'var(--surface)', borderRadius: 4 }}>
+              <strong>Insight of the week</strong>
+              <p style={{ margin: '0.25rem 0 0' }}>{insightOfTheWeek.data}</p>
+            </div>
+          )}
           {insights.data?.insights?.length ? (
             <ul className="list">
               {insights.data.insights.map((item, index) => (
@@ -308,7 +388,7 @@ export const DashboardPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="muted">No insights yet.</p>
+            !insightOfTheWeek.data && <p className="muted">No insights yet.</p>
           )}
         </div>
         <div className="card">

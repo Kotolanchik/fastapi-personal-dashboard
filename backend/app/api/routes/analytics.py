@@ -104,3 +104,61 @@ def recommendations(
     cache_payload["generated_at"] = payload["generated_at"].isoformat()
     set_json(cache_key, cache_payload, settings.cache_ttl_seconds)
     return payload
+
+
+@router.get("/trend-this-month", response_model=schemas.TrendThisMonthResponse)
+def trend_this_month(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    settings = get_settings()
+    cache_key = f"trend_this_month:{user.id}"
+    cached = get_json(cache_key)
+    if cached:
+        return cached
+
+    df = analytics.build_daily_dataframe(db, user_id=user.id)
+    metrics = analytics.trend_this_month(df)
+    payload = {"metrics": metrics}
+    set_json(cache_key, payload, settings.cache_ttl_seconds)
+    return payload
+
+
+@router.get("/insight-of-the-week", response_model=schemas.InsightOfTheWeekResponse)
+def insight_of_the_week(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    settings = get_settings()
+    cache_key = f"insight_of_the_week:{user.id}"
+    cached = get_json(cache_key)
+    if cached:
+        return cached
+
+    df = analytics.build_daily_dataframe(db, user_id=user.id)
+    goals_objs = list_goals(db, user.id)
+    goals = [
+        {"sphere": g.sphere, "title": g.title, "target_value": g.target_value, "target_metric": g.target_metric}
+        for g in goals_objs
+    ]
+    insight = analytics.insight_of_the_week(df, goals=goals)
+    payload = {"insight": insight}
+    set_json(cache_key, payload, settings.cache_ttl_seconds)
+    return payload
+
+
+@router.get("/weekday-trends", response_model=schemas.WeekdayTrendsResponse)
+def weekday_trends(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    settings = get_settings()
+    cache_key = f"weekday_trends:{user.id}"
+    cached = get_json(cache_key)
+    if cached:
+        return cached
+
+    df = analytics.build_daily_dataframe(db, user_id=user.id)
+    payload = analytics.weekday_and_trends_payload(df)
+    set_json(cache_key, payload, settings.cache_ttl_seconds)
+    return payload

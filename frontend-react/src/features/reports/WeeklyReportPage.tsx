@@ -45,8 +45,8 @@ export const WeeklyReportPage = () => {
   return (
     <div className="stack">
       <div className="card">
-        <h3>Weekly digest</h3>
-        <p className="muted">{periodLabel}</p>
+        <h3>Last week in numbers</h3>
+        <p className="muted">{periodLabel} — sums, averages, and one insight.</p>
       </div>
       {spheres.length > 0 && (
         <section className="grid columns">

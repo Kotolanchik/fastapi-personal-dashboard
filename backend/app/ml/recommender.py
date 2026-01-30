@@ -176,6 +176,54 @@ def generate_recommendations(
                         "warning",
                     )
 
+    # --- Expenses grow faster than income (trend) ---
+    if "income" in df.columns:
+        expense_cols = [c for c in df.columns if c.startswith("expense_")]
+        if expense_cols and len(df) >= 10:
+            df_t = df.copy()
+            df_t["_total_exp"] = df_t[expense_cols].sum(axis=1)
+            sample = df_t[["date", "income", "_total_exp"]].dropna().sort_values("date").tail(30)
+            if len(sample) >= 10:
+                x = np.arange(len(sample))
+                inc_slope = float(np.polyfit(x, sample["income"].values, 1)[0])
+                exp_slope = float(np.polyfit(x, sample["_total_exp"].values, 1)[0])
+                if inc_slope > 0 and exp_slope > inc_slope:
+                    _add(
+                        recommendations,
+                        "Расходы растут быстрее дохода (тренд за последние 30 дней). Стоит пересмотреть бюджет.",
+                        "warning",
+                    )
+
+    # --- Sleep worse after weekends (Monday vs rest) ---
+    if "sleep_hours" in df.columns and len(df) >= 10:
+        df_w = df.copy()
+        df_w["date"] = pd.to_datetime(df_w["date"])
+        df_w["weekday"] = df_w["date"].dt.dayofweek
+        mon = df_w[df_w["weekday"] == 0]["sleep_hours"].dropna()
+        other = df_w[df_w["weekday"] != 0]["sleep_hours"].dropna()
+        if len(mon) >= 3 and len(other) >= 10:
+            mon_avg = mon.mean()
+            other_avg = other.mean()
+            if mon_avg < other_avg - 0.2:
+                _add(
+                    recommendations,
+                    "После выходных сон в среднем хуже (понедельник). Попробуйте стабильное время отхода в воскресенье.",
+                    "info",
+                )
+
+    # --- Focus higher on days with >6h sleep ---
+    if "focus_level" in df.columns and "sleep_hours" in df.columns:
+        low = df[df["sleep_hours"] < 6][["focus_level"]].dropna()
+        high = df[df["sleep_hours"] >= 6][["focus_level"]].dropna()
+        if len(low) >= 3 and len(high) >= 3:
+            f_low, f_high = low["focus_level"].mean(), high["focus_level"].mean()
+            if f_high > f_low + 0.3:
+                _add(
+                    recommendations,
+                    "Фокус выше в дни с ≥6 ч сна. Для продуктивности старайтесь высыпаться.",
+                    "info",
+                )
+
     # --- Cap and fallback ---
     if len(recommendations) > 5:
         recommendations = recommendations[:5]
