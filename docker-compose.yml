@@ -9,6 +9,9 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+    environment:
+      - SECRET_KEY=change-me
+      - CORS_ORIGINS=*
 
   frontend:
     build:

@@ -11,12 +11,17 @@ st.set_page_config(page_title="Personal Dashboard MVP", layout="wide")
 
 def api_request(method, path, payload=None, params=None):
     url = f"{st.session_state.api_url}{path}"
+    headers = {}
+    token = st.session_state.get("auth_token")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     try:
         response = requests.request(
             method,
             url,
             json=payload,
             params=params,
+            headers=headers,
             timeout=10,
         )
     except requests.RequestException as exc:
@@ -159,6 +164,52 @@ def render_time_series(entries, metrics, title):
     st.line_chart(df[metrics])
 
 
+def render_auth_sidebar():
+    st.sidebar.header("Account")
+    token = st.session_state.get("auth_token")
+    if not token:
+        login_tab, register_tab = st.sidebar.tabs(["Login", "Register"])
+
+        with login_tab:
+            with st.form("login_form"):
+                email = st.text_input("Email", key="login_email")
+                password = st.text_input("Password", type="password", key="login_password")
+                submitted = st.form_submit_button("Login")
+                if submitted:
+                    payload = {"email": email, "password": password}
+                    response = api_request("POST", "/auth/login", payload)
+                    if response and response.get("access_token"):
+                        st.session_state.auth_token = response["access_token"]
+                        st.success("Logged in.")
+
+        with register_tab:
+            with st.form("register_form"):
+                full_name = st.text_input("Full name", key="register_name")
+                email = st.text_input("Email", key="register_email")
+                password = st.text_input("Password", type="password", key="register_password")
+                submitted = st.form_submit_button("Create account")
+                if submitted:
+                    payload = {
+                        "email": email,
+                        "password": password,
+                        "full_name": full_name or None,
+                    }
+                    response = api_request("POST", "/auth/register", payload)
+                    if response:
+                        st.success("Account created. You can login now.")
+    else:
+        if "current_user" not in st.session_state:
+            profile = api_request("GET", "/auth/me")
+            if profile:
+                st.session_state.current_user = profile
+        user = st.session_state.get("current_user", {})
+        st.sidebar.success(f"Signed in as {user.get('email', '')}")
+        if st.sidebar.button("Logout"):
+            st.session_state.pop("auth_token", None)
+            st.session_state.pop("current_user", None)
+            st.success("Logged out.")
+
+
 st.sidebar.header("Settings")
 default_api_url = os.getenv("API_URL", "http://localhost:8000")
 st.session_state.api_url = st.sidebar.text_input(
@@ -166,6 +217,12 @@ st.session_state.api_url = st.sidebar.text_input(
     value=st.session_state.get("api_url", default_api_url),
 )
 default_tz = st.sidebar.text_input("Default timezone", value="UTC")
+
+render_auth_sidebar()
+
+if not st.session_state.get("auth_token"):
+    st.info("Please login or register to access your dashboard.")
+    st.stop()
 
 tabs = st.tabs(
     [
@@ -344,9 +401,17 @@ with tabs[4]:
     st.header("Dashboard")
 
     health_entries = fetch_entries("health")
+    if health_entries:
+        health_df = pd.DataFrame(health_entries)
+    else:
+        health_df = pd.DataFrame()
     render_time_series(health_entries, ["sleep_hours", "energy_level", "wellbeing"], "Health trends")
 
     finance_entries = fetch_entries("finance")
+    if finance_entries:
+        finance_df = pd.DataFrame(finance_entries)
+    else:
+        finance_df = pd.DataFrame()
     render_time_series(
         finance_entries,
         ["income", "expense_food", "expense_transport", "expense_health", "expense_other"],
@@ -354,6 +419,10 @@ with tabs[4]:
     )
 
     productivity_entries = fetch_entries("productivity")
+    if productivity_entries:
+        productivity_df = pd.DataFrame(productivity_entries)
+    else:
+        productivity_df = pd.DataFrame()
     render_time_series(
         productivity_entries,
         ["deep_work_hours", "tasks_completed", "focus_level"],
@@ -361,7 +430,22 @@ with tabs[4]:
     )
 
     learning_entries = fetch_entries("learning")
+    if learning_entries:
+        learning_df = pd.DataFrame(learning_entries)
+    else:
+        learning_df = pd.DataFrame()
     render_time_series(learning_entries, ["study_hours"], "Learning trends")
+
+    st.subheader("Quick summary")
+    col1, col2, col3, col4 = st.columns(4)
+    if not health_df.empty:
+        col1.metric("Avg sleep", f"{health_df['sleep_hours'].mean():.1f}h")
+    if not finance_df.empty:
+        col2.metric("Total income", f"{finance_df['income'].sum():.0f}")
+    if not productivity_df.empty:
+        col3.metric("Deep work total", f"{productivity_df['deep_work_hours'].sum():.1f}h")
+    if not learning_df.empty:
+        col4.metric("Study total", f"{learning_df['study_hours'].sum():.1f}h")
 
     st.subheader("Correlations")
     correlations = api_request("GET", "/analytics/correlations")
