@@ -135,6 +135,7 @@ class UserGoal(Base):
     target_value = Column(Float, nullable=True)
     target_metric = Column(String(64), nullable=True)
     deadline = Column(Date, nullable=True)
+    archived = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
     user = relationship("User", back_populates="goals")

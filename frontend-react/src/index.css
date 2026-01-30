@@ -782,6 +782,73 @@ td {
   opacity: 0.9;
 }
 
+/* Modal (goals edit) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay .modal {
+  max-width: 420px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Progress bar (goals) */
+.progress-bar-wrap {
+  height: 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  transition: width 0.2s ease-out;
+}
+
+.progress-bar-fill.warning {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.progress-bar-fill.success {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.goal-deadline-near {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.goal-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.goal-badge-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.goal-badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 /* Onboarding modal */
 .onboarding-overlay {
   position: fixed;

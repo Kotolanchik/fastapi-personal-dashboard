@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ... import schemas
@@ -17,10 +17,17 @@ router = APIRouter(prefix="/goals", tags=["goals"])
 
 @router.get("", response_model=schemas.GoalsProgressResponse)
 def get_goals(
+    period: str = Query("7d", description="Progress period: 7d, month, deadline"),
+    include_archived: bool = Query(False, description="Include archived goals"),
     db: Session = Depends(get_db_session),
     user=Depends(get_current_user),
 ):
-    return get_goals_with_progress(db, user.id)
+    if period not in schemas.GOAL_PROGRESS_PERIODS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"period must be one of {schemas.GOAL_PROGRESS_PERIODS}",
+        )
+    return get_goals_with_progress(db, user.id, period=period, include_archived=include_archived)
 
 
 @router.post("", response_model=schemas.GoalRead, status_code=status.HTTP_201_CREATED)
@@ -34,11 +41,11 @@ def create_goal(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"sphere must be one of {schemas.GOAL_SPHERES}",
         )
-    goals = list_goals(db, user.id)
-    if len(goals) >= 2:
+    goals = list_goals(db, user.id, include_archived=False)
+    if len(goals) >= schemas.GOAL_MAX_ACTIVE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Maximum 2 goals allowed. Edit or delete one first.",
+            detail=f"Maximum {schemas.GOAL_MAX_ACTIVE} active goals. Archive or delete one first.",
         )
     return create_goal_svc(db, user.id, payload)
 

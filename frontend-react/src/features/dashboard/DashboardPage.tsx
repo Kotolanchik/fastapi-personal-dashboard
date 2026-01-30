@@ -196,28 +196,56 @@ export const DashboardPage = () => {
         <section className="card">
           <h3>{t('dashboard.goalsProgress')}</h3>
           <div className="grid cards" style={{ marginTop: '0.5rem' }}>
-            {goalsProgress.map((p: GoalProgress) => (
-              <div key={p.goal_id} className="card">
-                <h4>{p.title}</h4>
-                {p.progress_pct != null ? (
-                  <>
-                    <p className="metric">{p.progress_pct.toFixed(0)}%</p>
-                    {p.current_value != null && p.target_value != null && (
-                      <p className="muted">
-                        {p.current_value.toFixed(1)} / {p.target_value}
-                        {p.target_metric ? ` ${p.target_metric}` : ''}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="muted">
-                    {p.current_value != null
-                      ? t('dashboard.currentValueTarget', { current: p.current_value.toFixed(1) })
-                      : t('dashboard.addEntriesToProgress')}
-                  </p>
-                )}
-              </div>
-            ))}
+            {goalsProgress.map((p: GoalProgress) => {
+              const daysLeft =
+                p.deadline != null
+                  ? Math.ceil(
+                      (new Date(p.deadline).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) /
+                        (24 * 60 * 60 * 1000),
+                    )
+                  : null
+              const almostThere = p.progress_pct != null && p.progress_pct >= 90
+              const fallingBehind =
+                p.progress_pct != null &&
+                p.progress_pct < 50 &&
+                (daysLeft == null || daysLeft <= 14)
+              return (
+                <div key={p.goal_id} className="card">
+                  <h4>{p.title}</h4>
+                  {(almostThere || fallingBehind) && (
+                    <p className="small" style={{ marginBottom: '0.25rem' }}>
+                      {almostThere && (
+                        <span className="goal-badge goal-badge-success">
+                          {t('dashboard.goalAlmostThere')}
+                        </span>
+                      )}
+                      {fallingBehind && !almostThere && (
+                        <span className="goal-badge goal-badge-warning">
+                          {t('dashboard.goalFallingBehind')}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {p.progress_pct != null ? (
+                    <>
+                      <p className="metric">{p.progress_pct.toFixed(0)}%</p>
+                      {p.current_value != null && p.target_value != null && (
+                        <p className="muted">
+                          {p.current_value.toFixed(1)} / {p.target_value}
+                          {p.target_metric ? ` ${p.target_metric}` : ''}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="muted">
+                      {p.current_value != null
+                        ? t('dashboard.currentValueTarget', { current: p.current_value.toFixed(1) })
+                        : t('dashboard.addEntriesToProgress')}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </section>
       )}

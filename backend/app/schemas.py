@@ -280,6 +280,8 @@ class RecommendationsResponse(BaseModel):
 
 # Goals
 GOAL_SPHERES = ("health", "finance", "productivity", "learning")
+GOAL_PROGRESS_PERIODS = ("7d", "month", "deadline")
+GOAL_MAX_ACTIVE = 5
 
 
 class GoalBase(BaseModel):
@@ -300,11 +302,13 @@ class GoalUpdate(BaseModel):
     target_value: Optional[float] = None
     target_metric: Optional[str] = Field(default=None, max_length=64)
     deadline: Optional[date] = None
+    archived: Optional[bool] = None
 
 
 class GoalRead(GoalBase):
     id: int
     user_id: int
+    archived: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -319,6 +323,8 @@ class GoalProgress(BaseModel):
     current_value: Optional[float] = None
     progress_pct: Optional[float] = None
     deadline: Optional[date] = None
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
 
 
 class GoalsProgressResponse(BaseModel):

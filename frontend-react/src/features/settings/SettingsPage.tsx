@@ -12,6 +12,7 @@ import {
   deleteGoal,
   getGoals,
   GOAL_SPHERES,
+  GOAL_METRICS_BY_SPHERE,
   type Goal,
   type GoalProgress,
 } from '../../shared/api/goals'
@@ -46,17 +47,21 @@ export const SettingsPage = () => {
   const [exporting, setExporting] = useState(false)
   const [goalTitle, setGoalTitle] = useState('')
   const [goalSphere, setGoalSphere] = useState('health')
+  const [goalTargetMetric, setGoalTargetMetric] = useState('sleep_hours')
   const [goalTargetValue, setGoalTargetValue] = useState<string>('')
+  const [goalDeadline, setGoalDeadline] = useState<string>('')
   const [goalSaving, setGoalSaving] = useState(false)
   const queryClient = useQueryClient()
   const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals })
 
   const goals = goalsQuery.data?.goals ?? []
+  const activeGoals = goals.filter((g) => !g.archived)
   const progress = goalsQuery.data?.progress ?? []
   const progressByGoalId = progress.reduce<Record<number, GoalProgress>>((acc, p) => {
     acc[p.goal_id] = p
     return acc
   }, {})
+  const goalMetrics = GOAL_METRICS_BY_SPHERE[goalSphere] ?? []
 
   const handleAddGoal = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -67,10 +72,14 @@ export const SettingsPage = () => {
         sphere: goalSphere,
         title: goalTitle.trim(),
         target_value: goalTargetValue ? parseFloat(goalTargetValue) : null,
-        target_metric: goalSphere === 'health' ? 'sleep_hours' : goalSphere === 'learning' ? 'study_hours' : goalSphere === 'productivity' ? 'deep_work_hours' : null,
+        target_metric: goalTargetMetric || null,
+        deadline: goalDeadline ? goalDeadline : null,
       })
       setGoalTitle('')
       setGoalTargetValue('')
+      setGoalDeadline('')
+      const metrics = GOAL_METRICS_BY_SPHERE[goalSphere]
+      setGoalTargetMetric(metrics?.[0] ?? '')
       queryClient.invalidateQueries({ queryKey: ['goals'] })
       toast.success(t('settings.goalAdded'))
     } catch (err) {
@@ -197,9 +206,9 @@ export const SettingsPage = () => {
       <div className="card">
         <h3>{t('settings.goalsTitle')}</h3>
         <p className="muted">{t('settings.goalsSubtitle')}</p>
-        {goals.length > 0 && (
+        {activeGoals.length > 0 && (
           <ul className="list" style={{ marginBottom: '1rem' }}>
-            {goals.map((g) => {
+            {activeGoals.map((g) => {
               const prog = progressByGoalId[g.id]
               return (
                 <li key={g.id} className="flex-between">
@@ -222,7 +231,7 @@ export const SettingsPage = () => {
             })}
           </ul>
         )}
-        {goals.length < 2 && (
+        {activeGoals.length < 5 && (
           <form onSubmit={handleAddGoal} className="form-grid">
             <label>
               {t('settings.goalTitle')}
@@ -238,11 +247,28 @@ export const SettingsPage = () => {
               {t('settings.sphere')}
               <select
                 value={goalSphere}
-                onChange={(e) => setGoalSphere(e.target.value)}
+                onChange={(e) => {
+                  setGoalSphere(e.target.value)
+                  const metrics = GOAL_METRICS_BY_SPHERE[e.target.value]
+                  setGoalTargetMetric(metrics?.[0] ?? '')
+                }}
               >
                 {GOAL_SPHERES.map((s) => (
                   <option key={s} value={s}>
                     {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t('goals.targetMetric')}
+              <select
+                value={goalTargetMetric}
+                onChange={(e) => setGoalTargetMetric(e.target.value)}
+              >
+                {goalMetrics.map((m) => (
+                  <option key={m} value={m}>
+                    {t(`entries.labels.${goalSphere}.${m}`) || m}
                   </option>
                 ))}
               </select>
@@ -255,6 +281,14 @@ export const SettingsPage = () => {
                 value={goalTargetValue}
                 onChange={(e) => setGoalTargetValue(e.target.value)}
                 placeholder={t('settings.targetValuePlaceholder')}
+              />
+            </label>
+            <label>
+              {t('goals.deadline')}
+              <input
+                type="date"
+                value={goalDeadline}
+                onChange={(e) => setGoalDeadline(e.target.value)}
               />
             </label>
             <div className="form-actions">
