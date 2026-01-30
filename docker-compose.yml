@@ -12,6 +12,10 @@ services:
     environment:
       - SECRET_KEY=change-me
       - CORS_ORIGINS=*
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_TTL_SECONDS=300
+    depends_on:
+      - redis
 
   frontend:
     build:
@@ -23,3 +27,8 @@ services:
       - API_URL=http://backend:8000
     depends_on:
       - backend
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"

@@ -12,3 +12,4 @@ requests
 passlib[bcrypt]
 python-jose[cryptography]
 email-validator
+redis

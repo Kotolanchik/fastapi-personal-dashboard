@@ -24,6 +24,8 @@ class Settings:
     algorithm: str
     access_token_expire_minutes: int
     auto_create_tables: bool
+    redis_url: str | None
+    cache_ttl_seconds: int
 
 
 @lru_cache
@@ -36,4 +38,6 @@ def get_settings() -> Settings:
         algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120")),
         auto_create_tables=_parse_bool(os.getenv("AUTO_CREATE_TABLES"), default=False),
+        redis_url=os.getenv("REDIS_URL"),
+        cache_ttl_seconds=int(os.getenv("CACHE_TTL_SECONDS", "300")),
     )

@@ -18,10 +18,13 @@ services:
       dockerfile: Dockerfile.backend
     environment:
       - DATABASE_URL=postgresql+psycopg2://dashboard:dashboard@postgres:5432/dashboard
+      - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=change-me
       - CORS_ORIGINS=http://localhost:8501
+      - CACHE_TTL_SECONDS=300
     depends_on:
       - postgres
+      - redis
     ports:
       - "8000:8000"
 
@@ -35,6 +38,11 @@ services:
       - backend
     ports:
       - "8501:8501"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
 
 volumes:
   postgres_data:
