@@ -58,7 +58,16 @@ def build_daily_dataframe(db, user_id: int | None = None) -> pd.DataFrame:
 
     health_df = _entries_to_df(
         health_entries,
-        ["sleep_hours", "energy_level", "weight_kg", "wellbeing"],
+        [
+            "sleep_hours",
+            "energy_level",
+            "weight_kg",
+            "wellbeing",
+            "steps",
+            "heart_rate_avg",
+            "workout_minutes",
+        ],
+        sum_fields=["steps", "workout_minutes"],
     )
     finance_df = _entries_to_df(
         finance_entries,
@@ -418,6 +427,17 @@ def trend_this_month(df: pd.DataFrame) -> List[dict]:
                 "value": round(float(c), 1),
                 "direction": "up" if c > p else ("down" if c < p else "neutral"),
             })
+    # Weight trend
+    if "weight_kg" in df.columns:
+        c = this_df["weight_kg"].dropna().mean()
+        p = prev_df["weight_kg"].dropna().mean()
+        if pd.notna(c) and pd.notna(p):
+            result.append({
+                "metric": "weight_kg",
+                "label": "Weight (avg kg)",
+                "value": round(float(c), 1),
+                "direction": "down" if c < p else ("up" if c > p else "neutral"),
+            })
     # Total expenses
     expense_cols = [c for c in df.columns if c.startswith("expense_")]
     if expense_cols:
@@ -475,11 +495,12 @@ def weekday_and_trends_payload(df: pd.DataFrame) -> dict:
         "trends_14": [],
         "trends_30": [],
     }
-    for metric, higher in [("sleep_hours", True), ("deep_work_hours", True)]:
-        bw = best_worst_weekday(df, metric, higher_is_better=higher)
-        if bw:
-            payload["best_worst_weekday"].append(bw)
-    for metric in ("sleep_hours", "deep_work_hours"):
+    for metric, higher in [("sleep_hours", True), ("deep_work_hours", True), ("weight_kg", False)]:
+        if metric in df.columns:
+            bw = best_worst_weekday(df, metric, higher_is_better=higher)
+            if bw:
+                payload["best_worst_weekday"].append(bw)
+    for metric in ("sleep_hours", "deep_work_hours", "weight_kg"):
         if metric in df.columns:
             for d in (14, 30):
                 t = linear_trend(df, metric, days=d)

@@ -18,13 +18,19 @@ class TimestampRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+HEALTH_ENTRY_TYPES = ("day", "morning", "evening")
+
 class HealthEntryBase(TimestampBase):
+    entry_type: str = Field(default="day", max_length=32)
     sleep_hours: confloat(ge=0, le=24)
     energy_level: conint(ge=1, le=10)
     supplements: Optional[str] = None
     weight_kg: Optional[confloat(ge=0, le=500)] = None
     wellbeing: conint(ge=1, le=10)
     notes: Optional[str] = None
+    steps: Optional[conint(ge=0, le=100000)] = None
+    heart_rate_avg: Optional[conint(ge=30, le=250)] = None
+    workout_minutes: Optional[conint(ge=0, le=1440)] = None
 
 
 class HealthEntryCreate(HealthEntryBase):
@@ -34,12 +40,16 @@ class HealthEntryCreate(HealthEntryBase):
 class HealthEntryUpdate(BaseModel):
     recorded_at: Optional[datetime] = None
     timezone: Optional[str] = None
+    entry_type: Optional[str] = Field(default=None, max_length=32)
     sleep_hours: Optional[confloat(ge=0, le=24)] = None
     energy_level: Optional[conint(ge=1, le=10)] = None
     supplements: Optional[str] = None
     weight_kg: Optional[confloat(ge=0, le=500)] = None
     wellbeing: Optional[conint(ge=1, le=10)] = None
     notes: Optional[str] = None
+    steps: Optional[conint(ge=0, le=100000)] = None
+    heart_rate_avg: Optional[conint(ge=30, le=250)] = None
+    workout_minutes: Optional[conint(ge=0, le=1440)] = None
 
 
 class HealthEntryRead(TimestampRead, HealthEntryBase):
@@ -74,10 +84,63 @@ class FinanceEntryRead(TimestampRead, FinanceEntryBase):
     user_id: int
 
 
+PRODUCTIVITY_TASK_STATUSES = ("open", "done", "cancelled")
+FOCUS_CATEGORIES = ("code", "writing", "meetings", "other")
+
+class ProductivityTaskBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=512)
+    status: str = Field(default="open", max_length=32)
+    due_at: Optional[datetime] = None
+
+
+class ProductivityTaskCreate(ProductivityTaskBase):
+    pass
+
+
+class ProductivityTaskUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=512)
+    status: Optional[str] = Field(default=None, max_length=32)
+    due_at: Optional[datetime] = None
+
+
+class ProductivityTaskRead(ProductivityTaskBase):
+    id: int
+    user_id: int
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FocusSessionBase(BaseModel):
+    recorded_at: Optional[datetime] = None
+    timezone: Optional[str] = Field(default="UTC", max_length=64)
+    duration_minutes: conint(ge=1, le=480)
+    session_type: Optional[str] = Field(default=None, max_length=32)  # pomodoro, deep_work
+    notes: Optional[str] = None
+
+
+class FocusSessionCreate(FocusSessionBase):
+    pass
+
+
+class FocusSessionRead(BaseModel):
+    id: int
+    user_id: int
+    recorded_at: datetime
+    local_date: date
+    duration_minutes: int
+    session_type: Optional[str] = None
+    notes: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProductivityEntryBase(TimestampBase):
     deep_work_hours: confloat(ge=0, le=24)
     tasks_completed: conint(ge=0)
     focus_level: conint(ge=1, le=10)
+    focus_category: Optional[str] = Field(default=None, max_length=64)
     notes: Optional[str] = None
 
 
@@ -91,6 +154,7 @@ class ProductivityEntryUpdate(BaseModel):
     deep_work_hours: Optional[confloat(ge=0, le=24)] = None
     tasks_completed: Optional[conint(ge=0)] = None
     focus_level: Optional[conint(ge=1, le=10)] = None
+    focus_category: Optional[str] = Field(default=None, max_length=64)
     notes: Optional[str] = None
 
 
@@ -98,11 +162,37 @@ class ProductivityEntryRead(TimestampRead, ProductivityEntryBase):
     user_id: int
 
 
+LEARNING_SOURCE_TYPES = ("book", "course", "podcast", "other")
+
+class LearningCourseBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    kind: Optional[str] = Field(default=None, max_length=32)  # course, book, topic
+
+
+class LearningCourseCreate(LearningCourseBase):
+    pass
+
+
+class LearningCourseUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    kind: Optional[str] = Field(default=None, max_length=32)
+
+
+class LearningCourseRead(LearningCourseBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class LearningEntryBase(TimestampBase):
     study_hours: confloat(ge=0, le=24)
     topics: Optional[str] = None
     projects: Optional[str] = None
     notes: Optional[str] = None
+    course_id: Optional[int] = None
+    source_type: Optional[str] = Field(default=None, max_length=32)
 
 
 class LearningEntryCreate(LearningEntryBase):
@@ -116,6 +206,8 @@ class LearningEntryUpdate(BaseModel):
     topics: Optional[str] = None
     projects: Optional[str] = None
     notes: Optional[str] = None
+    course_id: Optional[int] = None
+    source_type: Optional[str] = Field(default=None, max_length=32)
 
 
 class LearningEntryRead(TimestampRead, LearningEntryBase):

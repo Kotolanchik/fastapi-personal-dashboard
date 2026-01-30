@@ -13,6 +13,7 @@ from .routes import (
     learning,
     llm,
     productivity,
+    reminders,
 )
 
 api_router = APIRouter()
@@ -24,6 +25,7 @@ api_router.include_router(learning.router)
 api_router.include_router(goals.router)
 api_router.include_router(analytics.router)
 api_router.include_router(export.router)
+api_router.include_router(reminders.router)
 api_router.include_router(auth.router)
 api_router.include_router(admin.router)
 api_router.include_router(integrations.router)

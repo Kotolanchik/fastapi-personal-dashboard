@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -23,6 +23,8 @@ def create_learning(
         topics=entry.topics,
         projects=entry.projects,
         notes=entry.notes,
+        course_id=entry.course_id,
+        source_type=entry.source_type,
     )
     apply_timestamp(record, entry.recorded_at, entry.timezone)
     db.add(record)
@@ -87,3 +89,126 @@ def delete_learning(
     db.delete(record)
     db.commit()
     return {"status": "deleted"}
+
+
+# --- Learning courses (topics/courses reference) ---
+
+@router.post("/courses", response_model=schemas.LearningCourseRead)
+def create_course(
+    payload: schemas.LearningCourseCreate,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    course = models.LearningCourse(
+        user_id=user.id,
+        title=payload.title,
+        kind=payload.kind,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(course)
+    db.commit()
+    db.refresh(course)
+    return course
+
+
+@router.get("/courses", response_model=List[schemas.LearningCourseRead])
+def list_courses(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    return db.query(models.LearningCourse).filter(models.LearningCourse.user_id == user.id).order_by(models.LearningCourse.id).all()
+
+
+@router.get("/courses/{course_id}", response_model=schemas.LearningCourseRead)
+def get_course(
+    course_id: int,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    course = db.query(models.LearningCourse).filter(
+        models.LearningCourse.id == course_id,
+        models.LearningCourse.user_id == user.id,
+    ).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course
+
+
+@router.put("/courses/{course_id}", response_model=schemas.LearningCourseRead)
+def update_course(
+    course_id: int,
+    payload: schemas.LearningCourseUpdate,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    course = db.query(models.LearningCourse).filter(
+        models.LearningCourse.id == course_id,
+        models.LearningCourse.user_id == user.id,
+    ).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    data = payload.model_dump(exclude_unset=True) if hasattr(payload, "model_dump") else payload.dict(exclude_unset=True)
+    for key, value in data.items():
+        setattr(course, key, value)
+    db.commit()
+    db.refresh(course)
+    return course
+
+
+@router.delete("/courses/{course_id}")
+def delete_course(
+    course_id: int,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    course = db.query(models.LearningCourse).filter(
+        models.LearningCourse.id == course_id,
+        models.LearningCourse.user_id == user.id,
+    ).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    db.delete(course)
+    db.commit()
+    return {"status": "deleted"}
+
+
+@router.get("/streak")
+def learning_streak(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    """Current consecutive days with at least one learning entry (streak)."""
+    from datetime import timedelta
+
+    today = date.today()
+    last = (
+        db.query(models.LearningEntry.local_date)
+        .filter(models.LearningEntry.user_id == user.id)
+        .order_by(models.LearningEntry.local_date.desc())
+        .limit(1)
+        .scalar()
+    )
+    if last is None:
+        return {"current_streak_days": 0, "last_activity_date": None}
+    if last < today - timedelta(days=1):
+        return {"current_streak_days": 0, "last_activity_date": last.isoformat()}
+    streak = 0
+    d = today
+    while True:
+        exists = (
+            db.query(models.LearningEntry)
+            .filter(
+                models.LearningEntry.user_id == user.id,
+                models.LearningEntry.local_date == d,
+            )
+            .limit(1)
+            .first()
+        )
+        if not exists:
+            break
+        streak += 1
+        d -= timedelta(days=1)
+    return {
+        "current_streak_days": streak,
+        "last_activity_date": last.isoformat(),
+    }

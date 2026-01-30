@@ -17,7 +17,8 @@ def apply_timestamp(entry, recorded_at, timezone_name):
 
 
 def apply_update(entry, payload):
-    data = payload.dict(exclude_unset=True)
+    dump = getattr(payload, "model_dump", None)
+    data = dump(exclude_unset=True) if dump else payload.dict(exclude_unset=True)
     if "recorded_at" in data or "timezone" in data:
         recorded_at = data.get("recorded_at", entry.recorded_at)
         tz_name = data.get("timezone", entry.timezone)

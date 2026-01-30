@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
@@ -50,12 +51,16 @@ def export_csv(
             "recorded_at",
             "local_date",
             "timezone",
+            "entry_type",
             "sleep_hours",
             "energy_level",
             "supplements",
             "weight_kg",
             "wellbeing",
             "notes",
+            "steps",
+            "heart_rate_avg",
+            "workout_minutes",
         ]
         csv_body = _entries_to_csv(entries, fieldnames)
     elif category == "finance":
@@ -93,6 +98,7 @@ def export_csv(
             "deep_work_hours",
             "tasks_completed",
             "focus_level",
+            "focus_category",
             "notes",
         ]
         csv_body = _entries_to_csv(entries, fieldnames)
@@ -112,11 +118,62 @@ def export_csv(
             "topics",
             "projects",
             "notes",
+            "course_id",
+            "source_type",
         ]
         csv_body = _entries_to_csv(entries, fieldnames)
 
     return Response(
         content=csv_body,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/export/health-report")
+def export_health_report(
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    """Export health data for a period (e.g. for doctor): CSV with date range in filename."""
+    end = end_date or date.today()
+    start = start_date or (end - timedelta(days=30))
+    entries = (
+        db.query(models.HealthEntry)
+        .filter(
+            models.HealthEntry.user_id == user.id,
+            models.HealthEntry.local_date >= start,
+            models.HealthEntry.local_date <= end,
+        )
+        .order_by(models.HealthEntry.local_date.asc(), models.HealthEntry.id.asc())
+        .all()
+    )
+    fieldnames = [
+        "local_date",
+        "entry_type",
+        "sleep_hours",
+        "energy_level",
+        "wellbeing",
+        "weight_kg",
+        "steps",
+        "heart_rate_avg",
+        "workout_minutes",
+        "supplements",
+        "notes",
+    ]
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for entry in entries:
+        row = {f: getattr(entry, f) for f in fieldnames}
+        if hasattr(entry, "local_date") and row.get("local_date"):
+            row["local_date"] = row["local_date"].isoformat() if hasattr(row["local_date"], "isoformat") else row["local_date"]
+        writer.writerow(row)
+    filename = f"health_report_{start.isoformat()}_{end.isoformat()}.csv"
+    return Response(
+        content=buffer.getvalue(),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )

@@ -19,12 +19,16 @@ def create_health(
 ):
     record = models.HealthEntry(
         user_id=user.id,
+        entry_type=entry.entry_type or "day",
         sleep_hours=entry.sleep_hours,
         energy_level=entry.energy_level,
         supplements=entry.supplements,
         weight_kg=entry.weight_kg,
         wellbeing=entry.wellbeing,
         notes=entry.notes,
+        steps=entry.steps,
+        heart_rate_avg=entry.heart_rate_avg,
+        workout_minutes=entry.workout_minutes,
     )
     apply_timestamp(record, entry.recorded_at, entry.timezone)
     db.add(record)

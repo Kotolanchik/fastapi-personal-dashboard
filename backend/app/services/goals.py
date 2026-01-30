@@ -12,6 +12,8 @@ METRIC_SOURCE = {
     ("health", "sleep_hours"): (models.HealthEntry, "sleep_hours", "avg"),
     ("health", "energy_level"): (models.HealthEntry, "energy_level", "avg"),
     ("health", "wellbeing"): (models.HealthEntry, "wellbeing", "avg"),
+    ("health", "steps"): (models.HealthEntry, "steps", "sum"),
+    ("health", "workout_minutes"): (models.HealthEntry, "workout_minutes", "sum"),
     ("finance", "income"): (models.FinanceEntry, "income", "sum"),
     ("finance", "expense_total"): (models.FinanceEntry, None, "sum_expenses"),
     ("productivity", "deep_work_hours"): (models.ProductivityEntry, "deep_work_hours", "sum"),

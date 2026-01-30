@@ -64,6 +64,29 @@
   - Frontend: страница «AI Assistant», чат с подстановкой контекста дашборда, кнопка «Один инсайт по данным»; тосты при ошибке (LLM не настроен).
   - Зависимость: `openai>=1.0.0`; примеры в `.env.example` и `docker-compose.full.yml`.
 
+- **Здоровье (Health) — расширения**
+  - Несколько записей в день: поле `entry_type` (day / morning / evening), одна запись на день по-прежнему поддерживается.
+  - Доп. метрики: `steps`, `heart_rate_avg`, `workout_minutes` (опционально).
+  - Аналитика: тренд веса в «Trend this month» и «Weekday trends», сон по дням недели (best/worst weekday), учёт новых метрик в сводках.
+  - Экспорт: `GET /export/health-report?start_date=&end_date=` — CSV по периоду для врача (имя файла `health_report_YYYY-MM-DD_YYYY-MM-DD.csv`).
+  - Цели: поддержка целевых метрик `steps` и `workout_minutes`.
+
+- **Обучение (Learning) — расширения**
+  - Справочник курсов/тем: таблица `learning_courses`, CRUD API `/learning/courses` (title, kind: course/book/topic).
+  - В записях обучения: привязка к курсу (`course_id`), тип источника (`source_type`: book / course / podcast).
+  - Streak: `GET /learning/streak` — текущая серия дней подряд с хотя бы одной записью обучения (`current_streak_days`, `last_activity_date`).
+
+- **Продуктивность (Productivity) — расширения**
+  - Задачи: таблица `productivity_tasks`, CRUD API `/productivity/tasks` (title, status: open/done/cancelled, due_at); при смене статуса на done проставляется `completed_at`.
+  - Категория фокуса: поле `focus_category` в записях продуктивности (code / writing / meetings / other) для аналитики «на что уходит время».
+  - Сессии фокуса (Pomodoro/таймеры): таблица `focus_sessions`, `POST /productivity/sessions`, `GET /productivity/sessions` (duration_minutes, session_type: pomodoro/deep_work); агрегация по дате для отчётов.
+
+- **Напоминания**
+  - API напоминаний: `GET /reminders` — список напоминаний (тип, should_remind, message); напоминание «заполни здоровье за вчера» при отсутствии записи за вчера.
+
+- **Миграция**
+  - `0007_health_learning_productivity_extensions`: health (entry_type, steps, heart_rate_avg, workout_minutes), learning_courses + course_id/source_type в learning_entries, productivity_tasks + focus_category в productivity_entries, focus_sessions.
+
 - **Интеграции и биллинг (заготовки)**
   - Интеграции: список провайдеров, подключение, синхронизация (Google Fit, Apple Health, Open Banking); модели источников и заданий синхронизации, хранение токенов; баннер «OAuth coming soon».
   - Биллинг: модели планов и подписок, эндпоинты subscribe/subscription, страница Billing; пометка «Billing is in demo mode. No real charges.»; в README — что оплата пока не подключена.

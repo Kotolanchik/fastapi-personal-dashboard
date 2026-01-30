@@ -36,6 +36,9 @@ class User(Base):
     finance_entries = relationship("FinanceEntry", back_populates="user")
     productivity_entries = relationship("ProductivityEntry", back_populates="user")
     learning_entries = relationship("LearningEntry", back_populates="user")
+    learning_courses = relationship("LearningCourse", back_populates="user", cascade="all, delete-orphan")
+    productivity_tasks = relationship("ProductivityTask", back_populates="user", cascade="all, delete-orphan")
+    focus_sessions = relationship("FocusSession", back_populates="user", cascade="all, delete-orphan")
     data_sources = relationship("DataSource", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
     goals = relationship("UserGoal", back_populates="user", cascade="all, delete-orphan")
@@ -45,12 +48,16 @@ class HealthEntry(Base, TimestampMixin):
     __tablename__ = "health_entries"
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    entry_type = Column(String(32), nullable=False, default="day")  # day, morning, evening
     sleep_hours = Column(Float, nullable=False)
     energy_level = Column(Integer, nullable=False)
     supplements = Column(String, nullable=True)
     weight_kg = Column(Float, nullable=True)
     wellbeing = Column(Integer, nullable=False)
     notes = Column(String, nullable=True)
+    steps = Column(Integer, nullable=True)
+    heart_rate_avg = Column(Integer, nullable=True)
+    workout_minutes = Column(Integer, nullable=True)
 
     user = relationship("User", back_populates="health_entries")
 
@@ -76,9 +83,51 @@ class ProductivityEntry(Base, TimestampMixin):
     deep_work_hours = Column(Float, nullable=False)
     tasks_completed = Column(Integer, nullable=False)
     focus_level = Column(Integer, nullable=False)
+    focus_category = Column(String(64), nullable=True)  # code, writing, meetings
     notes = Column(String, nullable=True)
 
     user = relationship("User", back_populates="productivity_entries")
+
+
+class ProductivityTask(Base):
+    __tablename__ = "productivity_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(512), nullable=False)
+    status = Column(String(32), nullable=False, default="open")  # open, done, cancelled
+    due_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    user = relationship("User", back_populates="productivity_tasks")
+
+
+class FocusSession(Base):
+    __tablename__ = "focus_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    recorded_at = Column(DateTime(timezone=True), nullable=False)
+    local_date = Column(Date, nullable=False, index=True)
+    duration_minutes = Column(Integer, nullable=False)
+    session_type = Column(String(32), nullable=True)  # pomodoro, deep_work
+    notes = Column(String, nullable=True)
+
+    user = relationship("User", back_populates="focus_sessions")
+
+
+class LearningCourse(Base):
+    __tablename__ = "learning_courses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    kind = Column(String(32), nullable=True)  # course, book, topic
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    user = relationship("User", back_populates="learning_courses")
+    entries = relationship("LearningEntry", back_populates="course")
 
 
 class LearningEntry(Base, TimestampMixin):
@@ -89,8 +138,11 @@ class LearningEntry(Base, TimestampMixin):
     topics = Column(String, nullable=True)
     projects = Column(String, nullable=True)
     notes = Column(String, nullable=True)
+    course_id = Column(Integer, ForeignKey("learning_courses.id", ondelete="SET NULL"), nullable=True, index=True)
+    source_type = Column(String(32), nullable=True)  # book, course, podcast
 
     user = relationship("User", back_populates="learning_entries")
+    course = relationship("LearningCourse", back_populates="entries")
 
 
 class DataSource(Base):
