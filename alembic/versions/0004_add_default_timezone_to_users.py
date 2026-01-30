@@ -10,8 +10,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0004_add_default_timezone_to_users"
-down_revision = "0003_add_integrations_and_billing"
+revision = "0004"
+down_revision = "0003"
 branch_labels = None
 depends_on = None
 

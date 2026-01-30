@@ -10,6 +10,7 @@ statsmodels
 streamlit
 requests
 passlib[bcrypt]
+bcrypt>=4.0,<4.1
 python-jose[cryptography]
 email-validator
 redis

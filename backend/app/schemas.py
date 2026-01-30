@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, conint, confloat
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, conint, confloat
 
 
 class TimestampBase(BaseModel):
@@ -15,8 +15,7 @@ class TimestampRead(BaseModel):
     local_date: date
     timezone: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HealthEntryBase(TimestampBase):
@@ -143,8 +142,7 @@ class UserRead(UserBase):
     created_at: datetime
     role: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserProfileUpdate(BaseModel):
@@ -196,8 +194,7 @@ class DataSourceBase(BaseModel):
     status: Optional[str] = Field(default="connected", max_length=32)
     metadata: Optional[dict] = Field(default=None, alias="metadata_json")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class DataSourceCreate(DataSourceBase):
@@ -213,8 +210,7 @@ class DataSourceUpdate(BaseModel):
     token_expires_at: Optional[datetime] = None
     metadata: Optional[dict] = Field(default=None, alias="metadata_json")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class DataSourceRead(DataSourceBase):
@@ -223,8 +219,7 @@ class DataSourceRead(DataSourceBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SyncJobRead(BaseModel):
@@ -237,8 +232,7 @@ class SyncJobRead(BaseModel):
     stats: Optional[dict] = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlanBase(BaseModel):
@@ -258,8 +252,7 @@ class PlanRead(PlanBase):
     id: int
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubscriptionCreate(BaseModel):
@@ -277,8 +270,7 @@ class SubscriptionRead(BaseModel):
     external_subscription_id: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecommendationsResponse(BaseModel):
@@ -315,8 +307,7 @@ class GoalRead(GoalBase):
     user_id: int
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GoalProgress(BaseModel):

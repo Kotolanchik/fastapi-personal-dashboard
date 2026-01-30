@@ -105,19 +105,30 @@ Makefile                  # команды для быстрого запуск�
 
 ## Развёртывание одной командой
 
-Полный стек (Postgres + Redis + Backend + React) с автоматическими миграциями:
+Нужен только **Docker** (Node/npm не требуются).
 
-```bash
-make up
-```
+**Полный стек (продакшен-сборка):**
 
-Или без Makefile:
+| Способ | Команда |
+|--------|--------|
+| Windows CMD | `run.cmd` |
+| Windows PowerShell | `.\run.ps1` |
+| Любая ОС | `docker compose -f docker-compose.full.yml up --build` |
+| С Make (Linux/macOS) | `make up` |
 
-```bash
-docker compose -f docker-compose.full.yml up --build
-```
+**Режим разработки (hot reload, без пересборки):**
 
-После запуска: **http://localhost:5173** — React, **http://localhost:8000** — API. При первом запуске backend выполняет миграции БД (`alembic upgrade head`). Остановка: `make down` или `docker compose -f docker-compose.full.yml down`.
+| Способ | Команда |
+|--------|--------|
+| Windows CMD | `run-dev.cmd` |
+| Windows PowerShell | `.\run-dev.ps1` |
+| Любая ОС | `docker compose -f docker-compose.dev.yml up` |
+
+Первый запуск dev: `docker compose -f docker-compose.dev.yml up --build` (чтобы собрать образ backend).
+
+После запуска: **http://localhost:5173** — интерфейс, **http://localhost:8000** — API. Остановка: **Ctrl+C**, затем при необходимости `docker compose -f docker-compose.full.yml down` или `docker compose -f docker-compose.dev.yml down`.
+
+*(Если установлен npm: можно использовать `npm start` и `npm run dev` — они вызывают те же команды docker compose.)*
 
 ## Быстрый старт (локально)
 

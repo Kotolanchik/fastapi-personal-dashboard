@@ -10,8 +10,9 @@ const formatDate = (s: string) => {
       month: 'short',
       year: 'numeric',
     })
+  } catch {
+    return s
   }
-  return s
 }
 
 export const WeeklyReportPage = () => {

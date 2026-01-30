@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAuth } from '../auth/AuthContext'
@@ -157,7 +158,7 @@ export const SettingsPage = () => {
               value={fullName}
               onChange={(e) => {
                 setFullName(e.target.value)
-                setProfileErrors((p) => ({ ...p, full_name: undefined }))
+                setProfileErrors((p) => ({ ...p, full_name: '' }))
               }}
               aria-invalid={!!profileErrors.full_name}
             />
@@ -169,7 +170,7 @@ export const SettingsPage = () => {
               value={defaultTimezone}
               onChange={(e) => {
                 setDefaultTimezone(e.target.value)
-                setProfileErrors((p) => ({ ...p, default_timezone: undefined }))
+                setProfileErrors((p) => ({ ...p, default_timezone: '' }))
               }}
               aria-invalid={!!profileErrors.default_timezone}
             >
@@ -273,7 +274,7 @@ export const SettingsPage = () => {
               value={currentPassword}
               onChange={(e) => {
                 setCurrentPassword(e.target.value)
-                setPasswordErrors((p) => ({ ...p, current_password: undefined }))
+                setPasswordErrors((p) => ({ ...p, current_password: '' }))
               }}
               required
               aria-invalid={!!passwordErrors.current_password}
@@ -289,7 +290,7 @@ export const SettingsPage = () => {
               value={newPassword}
               onChange={(e) => {
                 setNewPassword(e.target.value)
-                setPasswordErrors((p) => ({ ...p, new_password: undefined }))
+                setPasswordErrors((p) => ({ ...p, new_password: '' }))
               }}
               required
               minLength={8}
@@ -306,7 +307,7 @@ export const SettingsPage = () => {
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value)
-                setPasswordErrors((p) => ({ ...p, confirm_password: undefined }))
+                setPasswordErrors((p) => ({ ...p, confirm_password: '' }))
               }}
               required
               minLength={8}

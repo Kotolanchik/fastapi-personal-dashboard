@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { getErrorMessage, parseValidationErrors } from '../../shared/utils/validation'
@@ -45,7 +46,7 @@ export const LoginPage = () => {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
-                setFieldErrors((prev) => ({ ...prev, email: undefined }))
+                setFieldErrors((prev) => ({ ...prev, email: '' }))
               }}
               required
               aria-invalid={!!fieldErrors.email}
@@ -59,7 +60,7 @@ export const LoginPage = () => {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
-                setFieldErrors((prev) => ({ ...prev, password: undefined }))
+                setFieldErrors((prev) => ({ ...prev, password: '' }))
               }}
               required
               aria-invalid={!!fieldErrors.password}

@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { getErrorMessage, parseValidationErrors } from '../../shared/utils/validation'
@@ -34,7 +35,7 @@ export const RegisterPage = () => {
   }
 
   const clearFieldError = (field: string) => () =>
-    setFieldErrors((prev) => ({ ...prev, [field]: undefined }))
+    setFieldErrors((prev) => ({ ...prev, [field]: '' }))
 
   return (
     <div className="auth-page">

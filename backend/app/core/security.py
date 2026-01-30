@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -8,14 +9,23 @@ from .config import get_settings
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_BCRYPT_MAX_BYTES = 72
+
+
+def _normalize_password(password: str) -> str:
+    """Bcrypt accepts at most 72 bytes; longer passwords are pre-hashed with SHA256."""
+    raw = password.encode("utf-8")
+    if len(raw) <= _BCRYPT_MAX_BYTES:
+        return password
+    return hashlib.sha256(raw).hexdigest()
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(_normalize_password(password))
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(_normalize_password(plain_password), hashed_password)
 
 
 def create_access_token(

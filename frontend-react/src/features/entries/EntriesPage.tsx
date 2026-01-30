@@ -134,7 +134,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
               value={date}
               onChange={(e) => {
                 setDate(e.target.value)
-                setFieldErrors((prev) => ({ ...prev, recorded_at: undefined }))
+                setFieldErrors((prev) => ({ ...prev, recorded_at: '' }))
               }}
               required
               aria-invalid={!!fieldErrors.recorded_at}
@@ -151,7 +151,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
               value={timezone}
               onChange={(e) => {
                 setTimezone(e.target.value)
-                setFieldErrors((prev) => ({ ...prev, timezone: undefined }))
+                setFieldErrors((prev) => ({ ...prev, timezone: '' }))
               }}
               aria-invalid={!!fieldErrors.timezone}
             />
@@ -168,7 +168,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
                 value={form[field.name] ?? ''}
                 onChange={(e) => {
                   setForm((prev) => ({ ...prev, [field.name]: e.target.value }))
-                  setFieldErrors((prev) => ({ ...prev, [field.name]: undefined }))
+                  setFieldErrors((prev) => ({ ...prev, [field.name]: '' }))
                 }}
                 aria-invalid={!!fieldErrors[field.name]}
               />

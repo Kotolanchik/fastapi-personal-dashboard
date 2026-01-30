@@ -104,6 +104,7 @@ export const DashboardPage = () => {
   const [exporting, setExporting] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted())
   const [inactiveReminderDismissed, setInactiveReminderDismissed] = useState(false)
+  const [exportCategory, setExportCategory] = useState<ExportCategory>('all')
   const health = useQuery({
     queryKey: ['health'],
     queryFn: () => fetchEntries<HealthEntry>('health'),
@@ -123,67 +124,35 @@ export const DashboardPage = () => {
   const correlations = useQuery({
     queryKey: ['correlations'],
     queryFn: getCorrelations,
+    retry: false,
   })
   const insights = useQuery({
     queryKey: ['insights'],
     queryFn: getInsights,
+    retry: false,
   })
   const recommendations = useQuery({
     queryKey: ['recommendations'],
     queryFn: getRecommendations,
+    retry: false,
   })
-  const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals })
+  const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals, retry: false })
   const trendThisMonth = useQuery({
     queryKey: ['trend-this-month'],
     queryFn: () => getTrendThisMonth().then((d: { metrics: TrendThisMonthItem[] }) => d.metrics),
+    retry: false,
   })
   const insightOfTheWeek = useQuery({
     queryKey: ['insight-of-the-week'],
     queryFn: () => getInsightOfTheWeek().then((d: InsightOfTheWeekResponse) => d.insight),
+    retry: false,
   })
   const weekdayTrends = useQuery({
     queryKey: ['weekday-trends'],
     queryFn: getWeekdayTrends,
+    retry: false,
   })
 
-  const isLoading =
-    health.isLoading ||
-    finance.isLoading ||
-    productivity.isLoading ||
-    learning.isLoading ||
-    correlations.isLoading ||
-    insights.isLoading ||
-    recommendations.isLoading ||
-    goalsQuery.isLoading ||
-    trendThisMonth.isLoading ||
-    insightOfTheWeek.isLoading ||
-    weekdayTrends.isLoading
-
-  if (isLoading) {
-    return (
-      <div className="stack">
-        <section className="grid cards">
-          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
-        </section>
-        <section className="grid charts">
-          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
-        </section>
-        <section className="grid columns">
-          <div className="card skeleton-card"><div className="skeleton list-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton list-skeleton" /></div>
-          <div className="card skeleton-card"><div className="skeleton list-skeleton" /></div>
-        </section>
-      </div>
-    )
-  }
-
-  const [exportCategory, setExportCategory] = useState<ExportCategory>('all')
   const handleDownloadCsv = async () => {
     setExporting(true)
     try {
