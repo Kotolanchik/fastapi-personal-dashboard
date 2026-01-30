@@ -250,3 +250,47 @@ def insights_payload(db, user_id: int | None = None):
         "generated_at": datetime.utcnow(),
         "insights": generate_insights(df),
     }
+
+
+def weekly_digest(df: pd.DataFrame, period_start: date, period_end: date) -> dict:
+    """Build summary by spheres + one insight for weekly report."""
+    from .ml.recommender import generate_recommendations
+
+    summary = {}
+    if not df.empty:
+        if "sleep_hours" in df.columns:
+            summary["health"] = {
+                "sleep_avg": round(float(df["sleep_hours"].mean()), 1),
+                "energy_avg": round(float(df["energy_level"].mean()), 1) if "energy_level" in df.columns else None,
+                "wellbeing_avg": round(float(df["wellbeing"].mean()), 1) if "wellbeing" in df.columns else None,
+            }
+        expense_cols = [c for c in df.columns if c.startswith("expense_")]
+        if "income" in df.columns:
+            summary["finance"] = {
+                "income_total": round(float(df["income"].sum()), 0),
+                "expense_total": round(float(df[expense_cols].sum().sum()), 0) if expense_cols else 0,
+            }
+        if "deep_work_hours" in df.columns:
+            summary["productivity"] = {
+                "deep_work_total": round(float(df["deep_work_hours"].sum()), 1),
+                "tasks_total": int(df["tasks_completed"].sum()) if "tasks_completed" in df.columns else None,
+                "focus_avg": round(float(df["focus_level"].mean()), 1) if "focus_level" in df.columns else None,
+            }
+        if "study_hours" in df.columns:
+            summary["learning"] = {
+                "study_total": round(float(df["study_hours"].sum()), 1),
+            }
+    insights = generate_insights(df)
+    recs = generate_recommendations(df, goals=None)
+    insight = None
+    if insights:
+        insight = insights[0].get("message")
+    elif recs:
+        insight = recs[0].get("message")
+    return {
+        "period_start": period_start,
+        "period_end": period_end,
+        "summary": summary,
+        "insight": insight,
+        "generated_at": datetime.utcnow(),
+    }

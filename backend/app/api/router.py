@@ -7,6 +7,7 @@ from .routes import (
     billing,
     export,
     finance,
+    goals,
     health,
     integrations,
     learning,
@@ -19,6 +20,7 @@ api_router.include_router(health.router)
 api_router.include_router(finance.router)
 api_router.include_router(productivity.router)
 api_router.include_router(learning.router)
+api_router.include_router(goals.router)
 api_router.include_router(analytics.router)
 api_router.include_router(export.router)
 api_router.include_router(auth.router)

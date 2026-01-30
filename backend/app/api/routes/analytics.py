@@ -5,6 +5,7 @@ from ... import analytics, schemas
 from ...core.config import get_settings
 from ...ml.recommender import recommendations_payload
 from ...services.cache import get_json, set_json
+from ...services.goals import list_goals
 from ..deps import get_current_user, get_db_session
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -46,6 +47,36 @@ def insights(
     return payload
 
 
+@router.get("/weekly-report", response_model=schemas.WeeklyReportResponse)
+def weekly_report(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    from datetime import date, timedelta
+
+    settings = get_settings()
+    cache_key = f"weekly_report:{user.id}"
+    cached = get_json(cache_key)
+    if cached:
+        return cached
+
+    df = analytics.build_daily_dataframe(db, user_id=user.id)
+    period_end = date.today()
+    period_start = period_end - timedelta(days=6)
+    if "date" in df.columns and not df.empty:
+        df = df[(df["date"] >= period_start) & (df["date"] <= period_end)]
+    payload = analytics.weekly_digest(df, period_start, period_end)
+    cache_payload = {
+        "period_start": payload["period_start"].isoformat(),
+        "period_end": payload["period_end"].isoformat(),
+        "summary": payload["summary"],
+        "insight": payload["insight"],
+        "generated_at": payload["generated_at"].isoformat(),
+    }
+    set_json(cache_key, cache_payload, settings.cache_ttl_seconds)
+    return payload
+
+
 @router.get("/recommendations", response_model=schemas.RecommendationsResponse)
 def recommendations(
     db: Session = Depends(get_db_session),
@@ -58,7 +89,17 @@ def recommendations(
         return cached
 
     df = analytics.build_daily_dataframe(db, user_id=user.id)
-    payload = recommendations_payload(df)
+    goals_objs = list_goals(db, user.id)
+    goals = [
+        {
+            "sphere": g.sphere,
+            "title": g.title,
+            "target_value": g.target_value,
+            "target_metric": g.target_metric,
+        }
+        for g in goals_objs
+    ]
+    payload = recommendations_payload(df, goals=goals)
     cache_payload = dict(payload)
     cache_payload["generated_at"] = payload["generated_at"].isoformat()
     set_json(cache_key, cache_payload, settings.cache_ttl_seconds)

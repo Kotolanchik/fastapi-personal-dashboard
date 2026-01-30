@@ -24,3 +24,19 @@ export const getRecommendations = () =>
       '/analytics/recommendations',
     )
     .then((res) => res.data)
+
+export type WeeklyReport = {
+  period_start: string
+  period_end: string
+  summary: Record<
+    string,
+    Record<string, number | string | null | undefined>
+  >
+  insight: string | null
+  generated_at: string
+}
+
+export const getWeeklyReport = () =>
+  api
+    .get<WeeklyReport>('/analytics/weekly-report')
+    .then((res) => res.data)

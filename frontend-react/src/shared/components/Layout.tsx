@@ -5,6 +5,7 @@ import { Footer } from './Footer'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
+  { to: '/weekly-report', label: 'Weekly report' },
   { to: '/health', label: 'Health' },
   { to: '/finance', label: 'Finance' },
   { to: '/productivity', label: 'Productivity' },

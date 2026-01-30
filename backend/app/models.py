@@ -38,6 +38,7 @@ class User(Base):
     learning_entries = relationship("LearningEntry", back_populates="user")
     data_sources = relationship("DataSource", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
+    goals = relationship("UserGoal", back_populates="user", cascade="all, delete-orphan")
 
 
 class HealthEntry(Base, TimestampMixin):
@@ -122,6 +123,21 @@ class SyncJob(Base):
     message = Column(String(512), nullable=True)
     stats = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class UserGoal(Base):
+    __tablename__ = "user_goals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    sphere = Column(String(32), nullable=False)
+    title = Column(String(255), nullable=False)
+    target_value = Column(Float, nullable=True)
+    target_metric = Column(String(64), nullable=True)
+    deadline = Column(Date, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    user = relationship("User", back_populates="goals")
 
 
 class Plan(Base):

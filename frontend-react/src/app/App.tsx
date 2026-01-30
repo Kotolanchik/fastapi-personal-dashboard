@@ -6,6 +6,7 @@ import { RequireAuth } from '../features/auth/RequireAuth'
 import { BillingPage } from '../features/billing/BillingPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { WeeklyReportPage } from '../features/reports/WeeklyReportPage'
 import { FinancePage } from '../features/entries/FinancePage'
 import { HealthPage } from '../features/entries/HealthPage'
 import { LearningPage } from '../features/entries/LearningPage'
@@ -30,6 +31,7 @@ export const App = () => (
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="weekly-report" element={<WeeklyReportPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="finance" element={<FinancePage />} />
           <Route path="productivity" element={<ProductivityPage />} />

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+
+import { OnboardingModal, isOnboardingCompleted } from '../onboarding/OnboardingModal'
 import {
   Line,
   LineChart,
@@ -19,6 +21,7 @@ import {
   type ProductivityEntry,
   fetchEntries,
 } from '../../shared/api/entries'
+import { getGoals, type GoalProgress } from '../../shared/api/goals'
 
 const toChart = (data: HealthEntry[]) =>
   data.map((entry) => ({
@@ -60,6 +63,7 @@ const EXPORT_OPTIONS: { value: ExportCategory; label: string }[] = [
 export const DashboardPage = () => {
   const toast = useToast()
   const [exporting, setExporting] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted())
   const health = useQuery({
     queryKey: ['health'],
     queryFn: () => fetchEntries<HealthEntry>('health'),
@@ -88,6 +92,7 @@ export const DashboardPage = () => {
     queryKey: ['recommendations'],
     queryFn: getRecommendations,
   })
+  const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals })
 
   const isLoading =
     health.isLoading ||
@@ -96,7 +101,8 @@ export const DashboardPage = () => {
     learning.isLoading ||
     correlations.isLoading ||
     insights.isLoading ||
-    recommendations.isLoading
+    recommendations.isLoading ||
+    goalsQuery.isLoading
 
   if (isLoading) {
     return (
@@ -135,8 +141,42 @@ export const DashboardPage = () => {
     }
   }
 
+  const goalsProgress = goalsQuery.data?.progress ?? []
+
   return (
     <div className="stack">
+      {showOnboarding && (
+        <OnboardingModal onDismiss={() => setShowOnboarding(false)} />
+      )}
+      {goalsProgress.length > 0 && (
+        <section className="card">
+          <h3>Goals progress</h3>
+          <div className="grid cards" style={{ marginTop: '0.5rem' }}>
+            {goalsProgress.map((p: GoalProgress) => (
+              <div key={p.goal_id} className="card">
+                <h4>{p.title}</h4>
+                {p.progress_pct != null ? (
+                  <>
+                    <p className="metric">{p.progress_pct.toFixed(0)}%</p>
+                    {p.current_value != null && p.target_value != null && (
+                      <p className="muted">
+                        {p.current_value.toFixed(1)} / {p.target_value}
+                        {p.target_metric ? ` ${p.target_metric}` : ''}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="muted">
+                    {p.current_value != null
+                      ? `Current: ${p.current_value.toFixed(1)} (add target in Settings)`
+                      : 'Add entries to see progress'}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       <div className="card export-bar">
         <h3>Export data</h3>
         <p className="muted">Download your entries as CSV.</p>

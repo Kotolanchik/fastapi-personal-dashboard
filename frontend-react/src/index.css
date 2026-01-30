@@ -161,6 +161,10 @@ td {
   color: #64748b;
 }
 
+.capitalize {
+  text-transform: capitalize;
+}
+
 .form-grid {
   display: grid;
   gap: 1rem;
@@ -624,4 +628,73 @@ td {
 
 .empty-state-cta:hover {
   opacity: 0.9;
+}
+
+/* Onboarding modal */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.onboarding-modal {
+  max-width: 440px;
+  width: 100%;
+}
+
+.onboarding-modal h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+
+.onboarding-modal p {
+  margin: 0 0 1rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.onboarding-modal .onboarding-btn {
+  display: inline-block;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.onboarding-modal .onboarding-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.onboarding-modal .onboarding-btn:hover {
+  opacity: 0.9;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button.small {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.875rem;
 }

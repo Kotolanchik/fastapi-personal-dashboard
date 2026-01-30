@@ -284,3 +284,66 @@ class SubscriptionRead(BaseModel):
 class RecommendationsResponse(BaseModel):
     generated_at: datetime
     recommendations: list[InsightItem]
+
+
+# Goals
+GOAL_SPHERES = ("health", "finance", "productivity", "learning")
+
+
+class GoalBase(BaseModel):
+    sphere: str = Field(..., max_length=32)
+    title: str = Field(..., min_length=1, max_length=255)
+    target_value: Optional[float] = None
+    target_metric: Optional[str] = Field(default=None, max_length=64)
+    deadline: Optional[date] = None
+
+
+class GoalCreate(GoalBase):
+    pass
+
+
+class GoalUpdate(BaseModel):
+    sphere: Optional[str] = Field(default=None, max_length=32)
+    title: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    target_value: Optional[float] = None
+    target_metric: Optional[str] = Field(default=None, max_length=64)
+    deadline: Optional[date] = None
+
+
+class GoalRead(GoalBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class GoalProgress(BaseModel):
+    goal_id: int
+    title: str
+    sphere: str
+    target_value: Optional[float] = None
+    target_metric: Optional[str] = None
+    current_value: Optional[float] = None
+    progress_pct: Optional[float] = None
+    deadline: Optional[date] = None
+
+
+class GoalsProgressResponse(BaseModel):
+    goals: list[GoalRead]
+    progress: list[GoalProgress]
+
+
+# Weekly report (digest)
+class SphereSummary(BaseModel):
+    label: str
+    metrics: dict  # e.g. {"sleep_avg": 7.2, "energy_avg": 6}
+
+
+class WeeklyReportResponse(BaseModel):
+    period_start: date
+    period_end: date
+    summary: dict  # sphere -> SphereSummary or dict of metrics
+    insight: Optional[str] = None
+    generated_at: datetime

@@ -1,9 +1,18 @@
 import { FormEvent, useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAuth } from '../auth/AuthContext'
 import { changePassword, updateProfile } from '../../shared/api/auth'
 import { useToast } from '../../shared/components/Toast'
 import { downloadCsv, type ExportCategory } from '../../shared/api/export'
+import {
+  createGoal,
+  deleteGoal,
+  getGoals,
+  GOAL_SPHERES,
+  type Goal,
+  type GoalProgress,
+} from '../../shared/api/goals'
 import { getErrorMessage, parseValidationErrors } from '../../shared/utils/validation'
 
 const COMMON_TIMEZONES = [
@@ -30,6 +39,51 @@ export const SettingsPage = () => {
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
   const [exporting, setExporting] = useState(false)
+  const [goalTitle, setGoalTitle] = useState('')
+  const [goalSphere, setGoalSphere] = useState('health')
+  const [goalTargetValue, setGoalTargetValue] = useState<string>('')
+  const [goalSaving, setGoalSaving] = useState(false)
+  const queryClient = useQueryClient()
+  const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals })
+
+  const goals = goalsQuery.data?.goals ?? []
+  const progress = goalsQuery.data?.progress ?? []
+  const progressByGoalId = progress.reduce<Record<number, GoalProgress>>((acc, p) => {
+    acc[p.goal_id] = p
+    return acc
+  }, {})
+
+  const handleAddGoal = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!goalTitle.trim()) return
+    setGoalSaving(true)
+    try {
+      await createGoal({
+        sphere: goalSphere,
+        title: goalTitle.trim(),
+        target_value: goalTargetValue ? parseFloat(goalTargetValue) : null,
+        target_metric: goalSphere === 'health' ? 'sleep_hours' : goalSphere === 'learning' ? 'study_hours' : goalSphere === 'productivity' ? 'deep_work_hours' : null,
+      })
+      setGoalTitle('')
+      setGoalTargetValue('')
+      queryClient.invalidateQueries({ queryKey: ['goals'] })
+      toast.success('Goal added.')
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setGoalSaving(false)
+    }
+  }
+
+  const handleDeleteGoal = async (goal: Goal) => {
+    try {
+      await deleteGoal(goal.id)
+      queryClient.invalidateQueries({ queryKey: ['goals'] })
+      toast.success('Goal removed.')
+    } catch {
+      toast.error('Failed to remove goal.')
+    }
+  }
 
   useEffect(() => {
     setFullName(user?.full_name ?? '')
@@ -133,6 +187,78 @@ export const SettingsPage = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="card">
+        <h3>Goals</h3>
+        <p className="muted">Set 1–2 personal goals. Progress is shown on the dashboard.</p>
+        {goals.length > 0 && (
+          <ul className="list" style={{ marginBottom: '1rem' }}>
+            {goals.map((g) => {
+              const prog = progressByGoalId[g.id]
+              return (
+                <li key={g.id} className="flex-between">
+                  <span>
+                    <strong>{g.title}</strong> ({g.sphere})
+                    {prog?.progress_pct != null && (
+                      <span className="muted"> — {prog.progress_pct.toFixed(0)}%</span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() => handleDeleteGoal(g)}
+                    aria-label={`Delete goal ${g.title}`}
+                  >
+                    Remove
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {goals.length < 2 && (
+          <form onSubmit={handleAddGoal} className="form-grid">
+            <label>
+              Goal title
+              <input
+                type="text"
+                value={goalTitle}
+                onChange={(e) => setGoalTitle(e.target.value)}
+                placeholder="e.g. Sleep 7+ hours"
+                maxLength={255}
+              />
+            </label>
+            <label>
+              Sphere
+              <select
+                value={goalSphere}
+                onChange={(e) => setGoalSphere(e.target.value)}
+              >
+                {GOAL_SPHERES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Target value (optional)
+              <input
+                type="number"
+                step="any"
+                value={goalTargetValue}
+                onChange={(e) => setGoalTargetValue(e.target.value)}
+                placeholder="e.g. 7"
+              />
+            </label>
+            <div className="form-actions">
+              <button type="submit" disabled={goalSaving || !goalTitle.trim()}>
+                {goalSaving ? '…' : 'Add goal'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       <div className="card">
