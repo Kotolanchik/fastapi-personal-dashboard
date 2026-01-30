@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: personal-dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: your-registry/personal-dashboard-backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              value: postgresql+psycopg2://dashboard:dashboard@postgres:5432/dashboard
+            - name: SECRET_KEY
+              value: change-me
+            - name: CORS_ORIGINS
+              value: https://your-frontend-domain
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: personal-dashboard
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000

@@ -1,129 +1,107 @@
 # fastapi-personal-dashboard
 
-MVP web application for collecting daily data across health, finance,
-productivity, and learning. Includes a FastAPI backend (SQLite) and a
-Streamlit frontend with dashboards, correlations, and insights.
+MVP‑приложение для личной аналитики: сбор данных по здоровью, финансам,
+эффективности и обучению с дашбордами, корреляциями и инсайтами.
 
-## Features (MVP)
+## Возможности (MVP)
 
-- Manual data entry forms for 4 life areas
-- Edit/delete entries
-- Dashboard charts (time series)
-- Automatic correlations and 1-2 daily insights
-- CSV export
-- Timezone-aware timestamps and validation
+- Ручной ввод данных по 4 сферам жизни
+- Редактирование и удаление записей
+- Дашборды и временные ряды
+- Корреляции и 1–2 персональных инсайта
+- Экспорт в CSV
+- Поддержка часовых поясов
+- Базовая аутентификация (JWT) и роли
 
-## Project structure
+## Архитектура
+
+- **Backend**: FastAPI + SQLAlchemy + SQLite/Postgres
+- **Frontend**: Streamlit (позже можно заменить на React/Vue)
+- **DWH**: витрина данных с измерениями/фактами
+- **Analytics**: Pandas + NumPy + Statsmodels
+
+## Структура проекта
 
 ```
 backend/
   app/
     api/
-      deps.py             # DB session dependency wiring
-      router.py           # API router aggregator
+      deps.py             # зависимости (DB, auth)
+      router.py           # агрегатор роутов
       routes/
-        analytics.py      # /analytics endpoints
-        auth.py           # /auth endpoints
-        export.py         # /export endpoint
+        analytics.py      # /analytics
+        auth.py           # /auth
+        admin.py          # /admin (RBAC)
+        export.py         # /export
         finance.py        # /finance CRUD
         health.py         # /health CRUD
         learning.py       # /learning CRUD
         productivity.py   # /productivity CRUD
     core/
-      config.py           # Environment settings
-      security.py         # Password hashing + JWT
+      config.py           # настройки окружения
+      constants.py        # роли и константы
+      security.py         # хеширование паролей + JWT
     services/
-      entries.py          # Shared CRUD helpers
-      users.py            # User management helpers
-    analytics.py          # Correlations + insight generation
-    database.py           # SQLAlchemy engine/session
-    main.py               # FastAPI app entrypoint
-    models.py             # SQLAlchemy models
-    schemas.py            # Pydantic schemas
-    utils.py              # Timezone normalization helpers
-alembic/                  # App migrations
-alembic.ini               # App Alembic config
+      entries.py          # общие CRUD‑операции
+      users.py            # управление пользователями
+    analytics.py          # корреляции и инсайты
+    database.py           # подключение к БД
+    main.py               # точка входа FastAPI
+    models.py             # модели SQLAlchemy
+    schemas.py            # схемы Pydantic
+    utils.py              # timezone‑хелперы
+alembic/                  # миграции приложения
+alembic.ini               # Alembic конфиг
 frontend/
-  app.py                  # Streamlit UI (forms, charts, insights)
+  app.py                  # Streamlit UI
 etl/
-  export.py               # CLI export to CSV
+  export.py               # экспорт CSV
 dwh/
-  alembic/                # DWH migrations
-  alembic.ini             # DWH Alembic config
+  alembic/                # миграции DWH
+  alembic.ini             # DWH Alembic
   etl/
-    load_dwh.py           # Load app data into DWH
-  database.py             # DWH connection
-  models.py               # DWH schema (dims/facts)
-tests/                    # Pytest suite
-.github/workflows/ci.yml  # CI pipeline
-.pre-commit-config.yaml   # Git hooks
-pyproject.toml            # Ruff config
-requirements-dev.txt      # Dev dependencies
-data/                     # SQLite database (runtime)
-Dockerfile.backend        # Backend container
-Dockerfile.frontend       # Frontend container
-docker-compose.yml        # Local multi-service setup
+    load_dwh.py           # загрузка данных в DWH
+    export_parquet.py     # экспорт в Parquet
+  duckdb/
+    build_duckdb.py       # сборка DuckDB витрины
+  dbt/
+    dbt_project.yml       # dbt проект
+    profiles.example.yml  # пример профиля
+    models/metrics/       # dbt модели
+  database.py             # подключение DWH
+  models.py               # DWH схема
+tests/                    # pytest
+.github/workflows/ci.yml  # CI
+.pre-commit-config.yaml   # git hooks
+pyproject.toml            # ruff config
+requirements-dev.txt      # dev зависимости
+requirements-dwh.txt      # bigdata стек
+deploy/k8s/               # Kubernetes манифесты
+docker-compose.yml        # локальная разработка
+docker-compose.prod.yml   # production‑схема
 ```
 
-## Design notes (extensible + scalable)
-
-- API routers are split by domain to keep modules small and easy to extend.
-- Shared CRUD behaviors live in `services/` so new domains reuse logic.
-- Configuration is centralized in `core/config.py` and pulled from env vars.
-- Analytics is isolated, making it easy to add new models or forecasting later.
-- Database access uses a dependency for clean request lifecycle handling.
-- Auth is token-based and scopes all data to a user.
-
-When scaling beyond MVP, consider:
-- Migrations with Alembic (instead of `create_all`).
-- Background jobs (Celery/RQ/Arq) for heavy analytics.
-- Caching (Redis) for expensive insights.
-- Postgres + read replicas, analytics warehouse, feature flags.
-- Separate frontend (React/Vue) and deploy independently.
-
-## Quickstart (local)
+## Быстрый старт (локально)
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Run migrations
 alembic upgrade head
-
-# Run backend
 uvicorn backend.app.main:app --reload --port 8000
-
-# Run frontend
 streamlit run frontend/app.py
 ```
 
-Open Streamlit and set API URL to `http://localhost:8000`.
+Откройте http://localhost:8501, зарегистрируйтесь и войдите.
 
-## Run on your PC (step-by-step)
-
-1) Install Python 3.11+
-2) Create a virtual environment:
-   - macOS/Linux: `python -m venv .venv && source .venv/bin/activate`
-   - Windows: `python -m venv .venv && .\\.venv\\Scripts\\activate`
-3) Install dependencies: `pip install -r requirements.txt`
-4) Run app migrations: `alembic upgrade head`
-5) Start backend: `uvicorn backend.app.main:app --reload --port 8000`
-6) Start frontend (new terminal):
-   `streamlit run frontend/app.py`
-7) Open `http://localhost:8501`, register, and login.
-
-## Docker (optional)
+## Быстрый старт (Docker)
 
 ```bash
 docker compose up --build
 ```
 
-Frontend: http://localhost:8501
-
-You can also set `API_URL` to point Streamlit at a remote backend.
-
-## One-command setup (Makefile)
+## Быстрый старт (Makefile)
 
 ```bash
 make install
@@ -131,73 +109,98 @@ make migrate
 make run-backend
 ```
 
-In a second terminal:
+Во втором терминале:
 
 ```bash
 make run-frontend
 ```
 
-Docker option:
+## Production‑схема деплоя
+
+### Docker Compose (production)
 
 ```bash
-make docker-up
+docker compose -f docker-compose.prod.yml up --build
 ```
 
-## Environment (.env)
+### Kubernetes
 
-Copy `.env.example` to `.env` and update values as needed.
+```bash
+kubectl apply -f deploy/k8s/namespace.yaml
+kubectl apply -f deploy/k8s/postgres.yaml
+kubectl apply -f deploy/k8s/backend.yaml
+kubectl apply -f deploy/k8s/frontend.yaml
+kubectl apply -f deploy/k8s/ingress.yaml
+```
 
-## Authentication
+## Аутентификация и роли (RBAC)
 
-Create an account and login via the Streamlit sidebar. All data is scoped to
-the authenticated user.
+- Роли: `user`, `admin`
+- Все записи привязаны к пользователю
+- Админские эндпоинты: `/admin/*`
 
-## Configuration
+## Переменные окружения
 
-Backend environment variables:
+Скопируйте `.env.example` в `.env`, для продакшена используйте `.env.prod.example`.
 
-- `DATABASE_URL` (default: `sqlite:///./data/app.db`)
-- `CORS_ORIGINS` (default: `*`, comma-separated list)
-- `APP_ENV` (default: `local`)
-- `SECRET_KEY` (required for JWTs in production)
-- `ACCESS_TOKEN_EXPIRE_MINUTES` (default: 120)
-- `AUTO_CREATE_TABLES` (default: false)
+**Backend:**
+- `DATABASE_URL` (по умолчанию `sqlite:///./data/app.db`)
+- `CORS_ORIGINS` (по умолчанию `*`)
+- `SECRET_KEY` (обязательно в проде)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` (по умолчанию 120)
+- `AUTO_CREATE_TABLES` (по умолчанию false)
 
-Frontend environment variables:
+**Frontend:**
+- `API_URL` (по умолчанию `http://localhost:8000`)
 
-- `API_URL` (default: `http://localhost:8000`)
+**DWH:**
+- `DWH_DATABASE_URL` (по умолчанию `sqlite:///./data/dwh.db`)
 
-DWH environment variables:
-
-- `DWH_DATABASE_URL` (default: `sqlite:///./data/dwh.db`)
-
-## Migrations
-
-App database:
+## Миграции (Alembic)
 
 ```bash
 alembic upgrade head
 ```
 
-DWH database:
+### Автогенерация миграций
+
+```bash
+alembic revision --autogenerate -m "описание"
+```
+
+DWH миграции:
 
 ```bash
 alembic -c dwh/alembic.ini upgrade head
 ```
 
-## DWH / Analytics Warehouse
+## BigData витрины (Parquet + DuckDB + dbt)
 
-The DWH schema uses dimensions and fact tables to store raw events by user/date.
-Load app data into the warehouse with:
+Установить стек:
 
 ```bash
-python dwh/etl/load_dwh.py
+pip install -r requirements-dwh.txt
 ```
 
-You can later push the DWH into BigQuery/Snowflake/DuckDB/Parquet for
-large-scale analytics.
+Экспорт в Parquet:
 
-## Developer tooling
+```bash
+python dwh/etl/export_parquet.py
+```
+
+Сборка DuckDB:
+
+```bash
+python dwh/duckdb/build_duckdb.py
+```
+
+dbt (пример):
+
+```bash
+DBT_PROFILES_DIR=dwh/dbt dbt run --project-dir dwh/dbt --vars '{"parquet_path":"dwh/parquet"}'
+```
+
+## Инструменты разработки
 
 ```bash
 pip install -r requirements-dev.txt
@@ -206,8 +209,10 @@ ruff check .
 pytest
 ```
 
-## API overview
+## API (основное)
 
+- `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+- `GET /admin/users`, `PUT /admin/users/{id}/role`
 - `POST /health`, `GET /health`, `PUT /health/{id}`, `DELETE /health/{id}`
 - `POST /finance`, `GET /finance`, `PUT /finance/{id}`, `DELETE /finance/{id}`
 - `POST /productivity`, `GET /productivity`, `PUT /productivity/{id}`, `DELETE /productivity/{id}`
@@ -215,12 +220,10 @@ pytest
 - `GET /analytics/correlations`
 - `GET /analytics/insights`
 - `GET /export?category=health|finance|productivity|learning|daily`
-- `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
 
-## Next steps (roadmap)
+## Перспективы развития
 
-- OAuth integrations (Google Fit, Apple Health)
-- Bank transactions (Open Banking/Tinkoff)
-- Mobile app (Kivy/Flutter)
-- Subscription tiers (Stripe)
-- Switch SQLite to Postgres in production
+- Интеграции с Google Fit / Apple Health / Open Banking
+- Автоматизированная аналитика и ML‑рекомендации
+- Перенос DWH в BigQuery/Snowflake/ClickHouse
+- Мобильное приложение и подписки
