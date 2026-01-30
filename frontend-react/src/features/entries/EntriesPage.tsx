@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { createEntry, deleteEntry, fetchEntries, updateEntry } from '../../shared/api/entries'
@@ -57,7 +58,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [resource] })
       resetForm()
-      toast.success(variables.id ? 'Saved.' : 'Added.')
+      toast.success(variables.id ? t('entries.saved') : t('entries.added'))
     },
     onError: (err) => {
       setFieldErrors(parseValidationErrors(err))
@@ -142,11 +143,11 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
             {fieldErrors.recorded_at ? <div className="field-error">{fieldErrors.recorded_at}</div> : null}
           </label>
           <label>
-            Time
+            {t('entries.time')}
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </label>
           <label>
-            Timezone
+            {t('entries.timezone')}
             <input
               value={timezone}
               onChange={(e) => {
@@ -177,11 +178,11 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
           ))}
           <div className="form-actions">
             <button type="submit" disabled={mutation.isPending}>
-              {editing ? 'Save' : 'Add'}
+              {editing ? t('common.save') : t('common.add')}
             </button>
             {editing ? (
               <button type="button" className="secondary" onClick={resetForm}>
-                Cancel
+                {t('entries.cancel')}
               </button>
             ) : null}
           </div>
@@ -189,7 +190,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
       </div>
 
       <div className="card">
-        <h3>Entries</h3>
+        <h3>{t('entries.entriesList')}</h3>
         {isLoading ? (
           <div className="skeleton-list" aria-busy="true">
             <div className="skeleton-row" />
@@ -205,7 +206,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
                 {columns.map((column) => (
                   <th key={column}>{column}</th>
                 ))}
-                <th>Actions</th>
+                <th>{t('entries.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -215,12 +216,12 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
                     <td key={column}>{String(entry[column] ?? '')}</td>
                   ))}
                   <td className="actions">
-                    <button onClick={() => startEdit(entry)}>Edit</button>
+                    <button onClick={() => startEdit(entry)}>{t('entries.editEntry')}</button>
                     <button
                       className="danger"
                       onClick={() => deleteMutation.mutate(entry.id as number)}
                     >
-                      Delete
+                      {t('entries.delete')}
                     </button>
                   </td>
                 </tr>
@@ -229,10 +230,10 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
           </table>
         ) : (
           <div className="empty-state">
-            <p className="empty-state-text">No entries yet.</p>
-            <p className="muted">Add your first entry to start tracking.</p>
+            <p className="empty-state-text">{t('entries.noEntriesYet')}</p>
+            <p className="muted">{t('entries.addFirstHint')}</p>
             <a href="#entry-form" className="empty-state-cta">
-              Add your first entry
+              {t('entries.addFirstEntry')}
             </a>
           </div>
         )}

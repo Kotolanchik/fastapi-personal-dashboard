@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   connectSource,
@@ -11,7 +12,8 @@ import {
 import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
 export const IntegrationsPage = () => {
-  usePageTitle('Integrations')
+  const { t } = useTranslation()
+  usePageTitle(t('nav.integrations'))
   const queryClient = useQueryClient()
   const [provider, setProvider] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -46,16 +48,15 @@ export const IntegrationsPage = () => {
   return (
     <div className="stack">
       <div className="card banner muted" role="status">
-        OAuth for Google Fit / Apple Health coming soon. For now you can connect sources using
-        tokens below.
+        {t('integrations.banner')}
       </div>
       <div className="card">
-        <h3>Connect integration</h3>
+        <h3>{t('integrations.connectIntegration')}</h3>
         <div className="form-grid">
           <label>
-            Provider
+            {t('integrations.provider')}
             <select value={provider} onChange={(e) => setProvider(e.target.value)}>
-              <option value="">Select...</option>
+              <option value="">{t('common.select')}</option>
               {providerOptions.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -64,7 +65,7 @@ export const IntegrationsPage = () => {
             </select>
           </label>
           <label>
-            Access token
+            {t('integrations.accessToken')}
             <input
               type="password"
               value={accessToken}
@@ -72,7 +73,7 @@ export const IntegrationsPage = () => {
             />
           </label>
           <label>
-            Refresh token
+            {t('integrations.refreshToken')}
             <input
               type="password"
               value={refreshToken}
@@ -83,21 +84,21 @@ export const IntegrationsPage = () => {
             onClick={() => connectMutation.mutate()}
             disabled={!provider || connectMutation.isPending}
           >
-            Save
+            {t('common.save')}
           </button>
         </div>
       </div>
 
       <div className="card">
-        <h3>Data sources</h3>
+        <h3>{t('integrations.dataSources')}</h3>
         {sources.data?.length ? (
           <table>
             <thead>
               <tr>
-                <th>Provider</th>
-                <th>Status</th>
-                <th>Last synced</th>
-                <th>Action</th>
+                <th>{t('integrations.provider')}</th>
+                <th>{t('billing.status')}</th>
+                <th>{t('integrations.lastSynced')}</th>
+                <th>{t('integrations.action')}</th>
               </tr>
             </thead>
             <tbody>
@@ -108,7 +109,7 @@ export const IntegrationsPage = () => {
                   <td>{source.last_synced_at ?? '—'}</td>
                   <td>
                     <button onClick={() => syncMutation.mutate(source.provider)}>
-                      Sync
+                      {t('integrations.sync')}
                     </button>
                   </td>
                 </tr>
@@ -116,20 +117,20 @@ export const IntegrationsPage = () => {
             </tbody>
           </table>
         ) : (
-          <p className="muted">No connected sources.</p>
+          <p className="muted">{t('integrations.noSources')}</p>
         )}
       </div>
 
       <div className="card">
-        <h3>Sync history</h3>
+        <h3>{t('integrations.syncHistory')}</h3>
         {jobs.data?.length ? (
           <table>
             <thead>
               <tr>
-                <th>Provider</th>
-                <th>Status</th>
-                <th>Message</th>
-                <th>Finished</th>
+                <th>{t('integrations.provider')}</th>
+                <th>{t('billing.status')}</th>
+                <th>{t('integrations.message')}</th>
+                <th>{t('integrations.finished')}</th>
               </tr>
             </thead>
             <tbody>
@@ -144,7 +145,7 @@ export const IntegrationsPage = () => {
             </tbody>
           </table>
         ) : (
-          <p className="muted">No sync history.</p>
+          <p className="muted">{t('integrations.noSyncHistory')}</p>
         )}
       </div>
     </div>

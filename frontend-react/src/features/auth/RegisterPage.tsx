@@ -1,11 +1,13 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { getErrorMessage, parseValidationErrors } from '../../shared/utils/validation'
 import { useAuth } from './AuthContext'
 
 export const RegisterPage = () => {
+  const { t } = useTranslation()
   const { register, isLoading, token } = useAuth()
   const navigate = useNavigate()
   useEffect(() => {
@@ -29,7 +31,7 @@ export const RegisterPage = () => {
       if (Object.keys(errors).length) {
         setFieldErrors(errors)
       } else {
-        setGeneralError(getErrorMessage(err) || 'Could not create account. Please try again.')
+        setGeneralError(getErrorMessage(err) || t('auth.registerFailed'))
       }
     }
   }
@@ -40,11 +42,11 @@ export const RegisterPage = () => {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Sign up</h1>
-        <p className="muted">Create an account for personal tracking.</p>
+        <h1>{t('auth.signUp')}</h1>
+        <p className="muted">{t('auth.signUpSubtitle')}</p>
         <form onSubmit={handleSubmit} className="form-grid">
           <label>
-            Name
+            {t('common.name')}
             <input
               type="text"
               value={fullName}
@@ -57,7 +59,7 @@ export const RegisterPage = () => {
             {fieldErrors.full_name ? <div className="field-error">{fieldErrors.full_name}</div> : null}
           </label>
           <label>
-            Email
+            {t('common.email')}
             <input
               type="email"
               value={email}
@@ -71,7 +73,7 @@ export const RegisterPage = () => {
             {fieldErrors.email ? <div className="field-error">{fieldErrors.email}</div> : null}
           </label>
           <label>
-            Password
+            {t('common.password')}
             <input
               type="password"
               value={password}
@@ -87,11 +89,11 @@ export const RegisterPage = () => {
           </label>
           {generalError ? <div className="error">{generalError}</div> : null}
           <button type="submit" disabled={isLoading}>
-            Create account
+            {t('auth.createAccount')}
           </button>
         </form>
         <p className="muted">
-          Already have an account? <Link to="/login">Sign in</Link>
+          {t('auth.hasAccount')} <Link to="/login">{t('auth.signIn')}</Link>
         </p>
       </div>
     </div>

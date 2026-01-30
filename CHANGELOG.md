@@ -11,6 +11,19 @@
 
 ### Добавлено
 
+- **Интеграция LLM (AI Assistant)**
+  - Backend: модуль `llm` с клиентом OpenAI-совместимого API (OpenAI, Ollama и др.); конфиг `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`.
+  - API: `POST /llm/chat` — чат с ассистентом (опционально контекст из аналитики); `GET /llm/insight` — один инсайт по данным пользователя на основе сводки инсайтов.
+  - Frontend: страница «AI Assistant» в навигации; чат с подстановкой контекста дашборда; кнопка «Один инсайт по данным»; тосты при ошибке (LLM не настроен).
+  - Зависимость: `openai>=1.0.0`; примеры переменных окружения в `.env.example` и комментарии в `docker-compose.full.yml`.
+
+- **Глобальная локализация (EN / RU)**
+  - i18next, react-i18next, i18next-browser-languagedetector; инициализация в `src/i18n.ts`, ресурсы `src/locales/en.json` и `src/locales/ru.json`.
+  - Ключи по разделам: common, nav, auth, landing, dashboard, onboarding, inactiveReminder, goals, settings, assistant, entries, reports, errors, billing, integrations, legal, layout.
+  - Переключатель языка (EN | RU) в шапке Layout; сохранение выбора в `localStorage` (`lifepulse_lang`).
+  - Все пользовательские строки заменены на `t()` во всех страницах и общих компонентах (Layout, Footer, Landing, Auth, Dashboard, Goals, Settings, Assistant, Entries, Reports, Billing, Integrations, Legal, Onboarding, InactiveReminder, NotFound).
+  - Даты в еженедельном отчёте форматируются по текущей локали (ru-RU / en-US).
+
 - **Ревью LifePulse (промпты по действиям)**
   - Лендинг: hero переписан на выгоды и ЦА («люди, ведущие дневники и трекеры»); заголовок и подзаголовок отвечают на «зачем» и «что получу»; добавлен блок про бесплатный аккаунт и премиум «coming soon»; блок социального доказательства («Join others who track their life data»).
   - UX: при залогиненном пользователе переход на `/` автоматически перенаправляет на `/dashboard`.

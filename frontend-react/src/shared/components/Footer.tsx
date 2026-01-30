@@ -1,9 +1,13 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
-export const Footer = () => (
-  <footer className="app-footer">
-    <Link to="/privacy">Privacy Policy</Link>
-    <span className="footer-sep">·</span>
-    <Link to="/terms">Terms of Use</Link>
-  </footer>
-)
+export const Footer = () => {
+  const { t } = useTranslation()
+  return (
+    <footer className="app-footer">
+      <Link to="/privacy">{t('common.privacyPolicy')}</Link>
+      <span className="footer-sep">·</span>
+      <Link to="/terms">{t('common.termsOfUse')}</Link>
+    </footer>
+  )
+}

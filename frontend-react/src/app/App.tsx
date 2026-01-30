@@ -13,6 +13,7 @@ import { FinancePage } from '../features/entries/FinancePage'
 import { HealthPage } from '../features/entries/HealthPage'
 import { LearningPage } from '../features/entries/LearningPage'
 import { ProductivityPage } from '../features/entries/ProductivityPage'
+import { AssistantPage } from '../features/assistant/AssistantPage'
 import { IntegrationsPage } from '../features/integrations/IntegrationsPage'
 import { LandingPage } from '../features/landing/LandingPage'
 import { NotFoundPage } from '../features/errors/NotFoundPage'
@@ -39,6 +40,7 @@ export const App = () => (
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="assistant" element={<AssistantPage />} />
           <Route path="weekly-report" element={<WeeklyReportPage />} />
           <Route path="goals" element={<GoalsPage />} />
           <Route path="health" element={<HealthPage />} />

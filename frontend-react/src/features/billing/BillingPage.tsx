@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { getSubscription, listPlans, subscribePlan } from '../../shared/api/billing'
 import { useToast } from '../../shared/components/Toast'
 import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
 export const BillingPage = () => {
-  usePageTitle('Billing')
+  const { t } = useTranslation()
+  usePageTitle(t('nav.billing'))
   const queryClient = useQueryClient()
   const toast = useToast()
   const plans = useQuery({ queryKey: ['plans'], queryFn: listPlans })
@@ -19,25 +21,24 @@ export const BillingPage = () => {
     mutationFn: (planId: number) => subscribePlan(planId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription'] })
-      toast.success('Subscribed successfully.')
+      toast.success(t('billing.subscribedSuccess'))
     },
   })
 
   const planFeatures: Record<string, string> = {
-    free: 'Unlimited entries, CSV export, basic insights',
-    Free: 'Unlimited entries, CSV export, basic insights',
-    pro: 'Advanced analytics, integrations, priority support',
-    Pro: 'Advanced analytics, integrations, priority support',
+    free: t('billing.planFeatures.free'),
+    Free: t('billing.planFeatures.free'),
+    pro: t('billing.planFeatures.pro'),
+    Pro: t('billing.planFeatures.pro'),
   }
 
   return (
     <div className="stack">
       <div className="card banner muted" role="status">
-        <strong>Billing is in demo mode.</strong> No real charges. Subscriptions are stored in the
-        database only; payment integration is not connected.
+        {t('billing.demoMode')}
       </div>
       <div className="card">
-        <h3>Available plans</h3>
+        <h3>{t('billing.availablePlans')}</h3>
         {plans.data?.length ? (
           <div className="grid cards">
             {plans.data.map((plan) => (
@@ -47,29 +48,29 @@ export const BillingPage = () => {
                   {plan.price_monthly} {plan.currency}
                 </p>
                 <p className="muted small">
-                  {planFeatures[plan.name] ?? 'See plan details'}
+                  {planFeatures[plan.name] ?? t('billing.seePlanDetails')}
                 </p>
                 <button onClick={() => subscribeMutation.mutate(plan.id)}>
-                  Subscribe
+                  {t('billing.subscribe')}
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <p className="muted">No plans configured.</p>
+          <p className="muted">{t('billing.noPlans')}</p>
         )}
       </div>
 
       <div className="card">
-        <h3>Current subscription</h3>
+        <h3>{t('billing.currentSubscription')}</h3>
         {subscription.data ? (
           <div className="list">
-            <p>Plan ID: {subscription.data.plan_id}</p>
-            <p>Status: {subscription.data.status}</p>
-            <p>Started: {subscription.data.started_at}</p>
+            <p>{t('billing.planId')}: {subscription.data.plan_id}</p>
+            <p>{t('billing.status')}: {subscription.data.status}</p>
+            <p>{t('billing.startedAt')}: {subscription.data.started_at}</p>
           </div>
         ) : (
-          <p className="muted">No subscription found.</p>
+          <p className="muted">{t('billing.noSubscription')}</p>
         )}
       </div>
     </div>

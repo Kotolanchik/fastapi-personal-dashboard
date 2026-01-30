@@ -26,6 +26,9 @@ class Settings:
     auto_create_tables: bool
     redis_url: str | None
     cache_ttl_seconds: int
+    llm_api_key: str | None
+    llm_base_url: str | None
+    llm_model: str
 
 
 @lru_cache
@@ -40,4 +43,7 @@ def get_settings() -> Settings:
         auto_create_tables=_parse_bool(os.getenv("AUTO_CREATE_TABLES"), default=False),
         redis_url=os.getenv("REDIS_URL"),
         cache_ttl_seconds=int(os.getenv("CACHE_TTL_SECONDS", "300")),
+        llm_api_key=os.getenv("LLM_API_KEY") or None,
+        llm_base_url=os.getenv("LLM_BASE_URL") or None,
+        llm_model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
     )

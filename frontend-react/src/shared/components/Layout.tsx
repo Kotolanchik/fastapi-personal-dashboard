@@ -1,27 +1,35 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../../features/auth/AuthContext'
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../i18n'
 import { Footer } from './Footer'
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/weekly-report', label: 'Weekly report' },
-  { to: '/goals', label: 'Goals' },
-  { to: '/health', label: 'Health' },
-  { to: '/finance', label: 'Finance' },
-  { to: '/productivity', label: 'Productivity' },
-  { to: '/learning', label: 'Learning' },
-  { to: '/integrations', label: 'Integrations' },
-  { to: '/billing', label: 'Billing' },
-  { to: '/settings', label: 'Settings' },
+const navKeys: { to: string; key: string }[] = [
+  { to: '/dashboard', key: 'nav.dashboard' },
+  { to: '/assistant', key: 'nav.assistant' },
+  { to: '/weekly-report', key: 'nav.weeklyReport' },
+  { to: '/goals', key: 'nav.goals' },
+  { to: '/health', key: 'nav.health' },
+  { to: '/finance', key: 'nav.finance' },
+  { to: '/productivity', key: 'nav.productivity' },
+  { to: '/learning', key: 'nav.learning' },
+  { to: '/integrations', key: 'nav.integrations' },
+  { to: '/billing', key: 'nav.billing' },
+  { to: '/settings', key: 'nav.settings' },
 ]
 
 export const Layout = () => {
+  const { t, i18n } = useTranslation()
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const closeSidebar = () => setSidebarOpen(false)
+
+  const setLang = (lng: SupportedLanguage) => {
+    i18n.changeLanguage(lng)
+  }
 
   return (
     <div className="app-shell">
@@ -32,24 +40,24 @@ export const Layout = () => {
         role="button"
         tabIndex={-1}
         aria-hidden={!sidebarOpen}
-        aria-label="Close menu"
+        aria-label={t('nav.closeMenu')}
       />
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <Link to="/dashboard" className="brand-link" onClick={closeSidebar}>
           <div className="brand">
             <div className="brand-title">LifePulse</div>
-            <div className="brand-subtitle">Life analytics</div>
+            <div className="brand-subtitle">{t('nav.brandSubtitle')}</div>
           </div>
         </Link>
         <nav className="nav">
-          {navItems.map((item) => (
+          {navKeys.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
               onClick={closeSidebar}
             >
-              {item.label}
+              {t(item.key)}
             </NavLink>
           ))}
         </nav>
@@ -60,17 +68,33 @@ export const Layout = () => {
             type="button"
             className="sidebar-toggle secondary"
             onClick={() => setSidebarOpen((o) => !o)}
-            aria-label="Open menu"
+            aria-label={t('nav.openMenu')}
           >
             ☰
           </button>
           <div>
-            <h2>Hello, {user?.full_name || user?.email}</h2>
-            <p className="muted">Role: {user?.role ?? 'user'}</p>
+            <h2>{t('layout.greeting', { name: user?.full_name || user?.email || '' })}</h2>
+            <p className="muted">{t('common.role')}: {user?.role ?? 'user'}</p>
           </div>
-          <button onClick={logout} className="secondary">
-            Sign out
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className="lang-switcher" aria-label="Language">
+              {SUPPORTED_LANGUAGES.map((lng) => (
+                <button
+                  key={lng}
+                  type="button"
+                  className={`secondary small ${i18n.language?.startsWith(lng) ? 'active' : ''}`}
+                  onClick={() => setLang(lng)}
+                  aria-pressed={i18n.language?.startsWith(lng)}
+                  style={{ minWidth: 32, padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                >
+                  {lng.toUpperCase()}
+                </button>
+              ))}
+            </span>
+            <button onClick={logout} className="secondary">
+              {t('common.signOut')}
+            </button>
+          </div>
         </header>
         <section className="content">
           <Outlet />

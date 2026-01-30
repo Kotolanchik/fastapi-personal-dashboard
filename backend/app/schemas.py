@@ -377,3 +377,19 @@ class WeekdayTrendsResponse(BaseModel):
     best_worst_weekday: list[BestWorstWeekdayItem]
     trends_14: list[LinearTrendItem]
     trends_30: list[LinearTrendItem]
+
+
+# LLM / AI Assistant
+class LlmChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+    context: Optional[str] = Field(default=None, max_length=8000)
+
+
+class LlmChatResponse(BaseModel):
+    reply: str
+    model: Optional[str] = None
+
+
+class LlmInsightsResponse(BaseModel):
+    insight: str
+    model: Optional[str] = None

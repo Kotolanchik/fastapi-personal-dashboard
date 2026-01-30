@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { getWeeklyReport } from '../../shared/api/analytics'
 import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
-const formatDate = (s: string) => {
+const formatDate = (s: string, locale: string) => {
   try {
-    return new Date(s).toLocaleDateString(undefined, {
+    return new Date(s).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -16,7 +17,8 @@ const formatDate = (s: string) => {
 }
 
 export const WeeklyReportPage = () => {
-  usePageTitle('Weekly report')
+  const { t, i18n } = useTranslation()
+  usePageTitle(t('nav.weeklyReport'))
   const { data, isLoading, error } = useQuery({
     queryKey: ['weekly-report'],
     queryFn: getWeeklyReport,
@@ -36,20 +38,22 @@ export const WeeklyReportPage = () => {
     return (
       <div className="stack">
         <div className="card">
-          <p className="muted">Could not load weekly report.</p>
+          <p className="muted">{t('reports.couldNotLoad')}</p>
         </div>
       </div>
     )
   }
 
   const spheres = Object.entries(data.summary)
-  const periodLabel = `${formatDate(data.period_start)} – ${formatDate(data.period_end)}`
+  const locale = i18n.language?.startsWith('ru') ? 'ru' : 'en'
+  const startStr = formatDate(data.period_start, locale)
+  const endStr = formatDate(data.period_end, locale)
 
   return (
     <div className="stack">
       <div className="card">
-        <h3>Last week in numbers</h3>
-        <p className="muted">{periodLabel} — sums, averages, and one insight.</p>
+        <h3>{t('reports.lastWeekNumbers')}</h3>
+        <p className="muted">{t('reports.periodSubtitle', { start: startStr, end: endStr })}</p>
       </div>
       {spheres.length > 0 && (
         <section className="grid columns">
@@ -76,13 +80,13 @@ export const WeeklyReportPage = () => {
       )}
       {data.insight && (
         <div className="card">
-          <h3>Insight</h3>
+          <h3>{t('reports.insight')}</h3>
           <p>{data.insight}</p>
         </div>
       )}
       {spheres.length === 0 && !data.insight && (
         <div className="card">
-          <p className="muted">Add entries to see your weekly summary and insights.</p>
+          <p className="muted">{t('reports.addEntriesHint')}</p>
         </div>
       )}
     </div>

@@ -1,53 +1,44 @@
-from typing import Generator
+"""Shared API dependencies."""
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from .. import models
 from ..core.security import decode_token
 from ..database import get_db
-from ..models import User
+
+security = HTTPBearer(auto_error=False)
 
 
-def get_db_session() -> Generator[Session, None, None]:
+def get_db_session():
     yield from get_db()
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def get_current_user(
     db: Session = Depends(get_db_session),
-    token: str = Depends(oauth2_scheme),
-) -> User:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+):
+    if not credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     try:
-        payload = decode_token(token)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
-
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
-        )
-
-    user = db.get(User, int(user_id))
+        payload = decode_token(credentials.credentials)
+        sub = payload.get("sub")
+        if not sub:
+            raise ValueError("No sub")
+        user_id = int(sub)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    user = db.get(models.User, user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
 
-def require_role(*roles: str):
-    def dependency(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions",
-            )
+def require_role(role: str):
+    def _dep(user=Depends(get_current_user)):
+        if user.role != role:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
         return user
 
-    return dependency
+    return _dep

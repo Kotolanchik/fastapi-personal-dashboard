@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { getGoals, type GoalProgress } from '../../shared/api/goals'
 import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
 export const GoalsPage = () => {
-  usePageTitle('Goals')
+  const { t } = useTranslation()
+  usePageTitle(t('nav.goals'))
   const { data, isLoading } = useQuery({ queryKey: ['goals'], queryFn: getGoals })
 
   const goals = data?.goals ?? []
@@ -25,21 +27,21 @@ export const GoalsPage = () => {
     <div className="stack">
       <div className="card flex-between">
         <div>
-          <h3>Goals</h3>
-          <p className="muted">Your personal goals and progress. Add or edit goals in Settings.</p>
+          <h3>{t('goals.title')}</h3>
+          <p className="muted">{t('goals.subtitle')}</p>
         </div>
         <Link to="/settings" className="primary">
-          Edit in Settings
+          {t('goals.editInSettings')}
         </Link>
       </div>
 
       {goals.length === 0 ? (
         <div className="card">
           <div className="empty-state">
-            <p className="empty-state-text">No goals yet</p>
-            <p className="muted">Set 1–2 goals in Settings to track progress here and on the dashboard.</p>
+            <p className="empty-state-text">{t('goals.noGoalsYet')}</p>
+            <p className="muted">{t('goals.noGoalsHint')}</p>
             <Link to="/settings" className="empty-state-cta">
-              Go to Settings
+              {t('goals.goToSettings')}
             </Link>
           </div>
         </div>
@@ -62,8 +64,8 @@ export const GoalsPage = () => {
               ) : (
                 <p className="muted">
                   {p.current_value != null
-                    ? `Current: ${p.current_value.toFixed(1)} — add target in Settings`
-                    : 'Add entries to see progress'}
+                    ? t('dashboard.currentValueTarget', { current: p.current_value.toFixed(1) })
+                    : t('dashboard.addEntriesToProgress')}
                 </p>
               )}
             </div>

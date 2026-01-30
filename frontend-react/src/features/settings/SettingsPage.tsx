@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAuth } from '../auth/AuthContext'
@@ -29,7 +30,8 @@ const COMMON_TIMEZONES = [
 ]
 
 export const SettingsPage = () => {
-  usePageTitle('Settings')
+  const { t } = useTranslation()
+  usePageTitle(t('nav.settings'))
   const { user, refreshUser } = useAuth()
   const toast = useToast()
   const [fullName, setFullName] = useState(user?.full_name ?? '')
@@ -70,7 +72,7 @@ export const SettingsPage = () => {
       setGoalTitle('')
       setGoalTargetValue('')
       queryClient.invalidateQueries({ queryKey: ['goals'] })
-      toast.success('Goal added.')
+      toast.success(t('settings.goalAdded'))
     } catch (err) {
       toast.error(getErrorMessage(err))
     } finally {
@@ -82,9 +84,9 @@ export const SettingsPage = () => {
     try {
       await deleteGoal(goal.id)
       queryClient.invalidateQueries({ queryKey: ['goals'] })
-      toast.success('Goal removed.')
+      toast.success(t('settings.goalRemoved'))
     } catch {
-      toast.error('Failed to remove goal.')
+      toast.error(t('settings.failedToRemoveGoal'))
     }
   }
 
@@ -100,7 +102,7 @@ export const SettingsPage = () => {
     try {
       await updateProfile({ full_name: fullName || null, default_timezone: defaultTimezone || 'UTC' })
       await refreshUser()
-      toast.success('Profile saved.')
+      toast.success(t('settings.profileSaved'))
     } catch (err) {
       const errors = parseValidationErrors(err)
       setProfileErrors(errors)
@@ -114,7 +116,7 @@ export const SettingsPage = () => {
     e.preventDefault()
     setPasswordErrors({})
     if (newPassword !== confirmPassword) {
-      setPasswordErrors({ new_password: 'Passwords do not match', confirm_password: 'Passwords do not match' })
+      setPasswordErrors({ new_password: t('settings.passwordsDoNotMatch'), confirm_password: t('settings.passwordsDoNotMatch') })
       return
     }
     setPasswordSaving(true)
@@ -123,7 +125,7 @@ export const SettingsPage = () => {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      toast.success('Password changed.')
+      toast.success(t('settings.passwordChanged'))
     } catch (err) {
       const errors = parseValidationErrors(err)
       setPasswordErrors(errors)
@@ -137,9 +139,9 @@ export const SettingsPage = () => {
     setExporting(true)
     try {
       await downloadCsv(category)
-      toast.success('CSV downloaded.')
+      toast.success(t('dashboard.csvDownloaded'))
     } catch {
-      toast.error('Download failed.')
+      toast.error(t('dashboard.downloadFailed'))
     } finally {
       setExporting(false)
     }
@@ -148,11 +150,11 @@ export const SettingsPage = () => {
   return (
     <div className="stack">
       <div className="card">
-        <h3>Profile</h3>
-        <p className="muted">Update your name and default timezone.</p>
+        <h3>{t('settings.profile')}</h3>
+        <p className="muted">{t('settings.profileSubtitle')}</p>
         <form onSubmit={handleProfileSubmit} className="form-grid">
           <label>
-            Name
+            {t('common.name')}
             <input
               type="text"
               value={fullName}
@@ -165,7 +167,7 @@ export const SettingsPage = () => {
             {profileErrors.full_name ? <div className="field-error">{profileErrors.full_name}</div> : null}
           </label>
           <label>
-            Default timezone
+            {t('settings.defaultTimezone')}
             <select
               value={defaultTimezone}
               onChange={(e) => {
@@ -186,15 +188,15 @@ export const SettingsPage = () => {
           </label>
           <div className="form-actions">
             <button type="submit" disabled={profileSaving}>
-              {profileSaving ? 'Saving…' : 'Save'}
+              {profileSaving ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </form>
       </div>
 
       <div className="card">
-        <h3>Goals</h3>
-        <p className="muted">Set 1–2 personal goals. Progress is shown on the dashboard.</p>
+        <h3>{t('settings.goalsTitle')}</h3>
+        <p className="muted">{t('settings.goalsSubtitle')}</p>
         {goals.length > 0 && (
           <ul className="list" style={{ marginBottom: '1rem' }}>
             {goals.map((g) => {
@@ -211,9 +213,9 @@ export const SettingsPage = () => {
                     type="button"
                     className="secondary small"
                     onClick={() => handleDeleteGoal(g)}
-                    aria-label={`Delete goal ${g.title}`}
+                    aria-label={t('settings.deleteGoal', { title: g.title })}
                   >
-                    Remove
+                    {t('common.remove')}
                   </button>
                 </li>
               )
@@ -223,17 +225,17 @@ export const SettingsPage = () => {
         {goals.length < 2 && (
           <form onSubmit={handleAddGoal} className="form-grid">
             <label>
-              Goal title
+              {t('settings.goalTitle')}
               <input
                 type="text"
                 value={goalTitle}
                 onChange={(e) => setGoalTitle(e.target.value)}
-                placeholder="e.g. Sleep 7+ hours"
+                placeholder={t('settings.goalTitlePlaceholder')}
                 maxLength={255}
               />
             </label>
             <label>
-              Sphere
+              {t('settings.sphere')}
               <select
                 value={goalSphere}
                 onChange={(e) => setGoalSphere(e.target.value)}
@@ -246,18 +248,18 @@ export const SettingsPage = () => {
               </select>
             </label>
             <label>
-              Target value (optional)
+              {t('settings.targetValueOptional')}
               <input
                 type="number"
                 step="any"
                 value={goalTargetValue}
                 onChange={(e) => setGoalTargetValue(e.target.value)}
-                placeholder="e.g. 7"
+                placeholder={t('settings.targetValuePlaceholder')}
               />
             </label>
             <div className="form-actions">
               <button type="submit" disabled={goalSaving || !goalTitle.trim()}>
-                {goalSaving ? '…' : 'Add goal'}
+                {goalSaving ? '…' : t('settings.addGoal')}
               </button>
             </div>
           </form>
@@ -265,10 +267,10 @@ export const SettingsPage = () => {
       </div>
 
       <div className="card">
-        <h3>Change password</h3>
+        <h3>{t('settings.changePassword')}</h3>
         <form onSubmit={handlePasswordSubmit} className="form-grid">
           <label>
-            Current password
+            {t('settings.currentPassword')}
             <input
               type="password"
               value={currentPassword}
@@ -284,7 +286,7 @@ export const SettingsPage = () => {
             ) : null}
           </label>
           <label>
-            New password
+            {t('settings.newPassword')}
             <input
               type="password"
               value={newPassword}
@@ -301,7 +303,7 @@ export const SettingsPage = () => {
             ) : null}
           </label>
           <label>
-            Confirm new password
+            {t('settings.confirmNewPassword')}
             <input
               type="password"
               value={confirmPassword}
@@ -319,18 +321,18 @@ export const SettingsPage = () => {
           </label>
           <div className="form-actions">
             <button type="submit" disabled={passwordSaving}>
-              {passwordSaving ? 'Saving…' : 'Change password'}
+              {passwordSaving ? t('common.saving') : t('settings.changePassword')}
             </button>
           </div>
         </form>
       </div>
 
       <div className="card">
-        <h3>Export data</h3>
-        <p className="muted">Download your entries as CSV.</p>
+        <h3>{t('settings.exportData')}</h3>
+        <p className="muted">{t('dashboard.exportSubtitle')}</p>
         <div className="form-actions">
           <button type="button" disabled={exporting} onClick={() => handleDownloadCsv('all')}>
-            {exporting ? '…' : 'Download CSV'}
+            {exporting ? '…' : t('dashboard.downloadCsv')}
           </button>
         </div>
       </div>

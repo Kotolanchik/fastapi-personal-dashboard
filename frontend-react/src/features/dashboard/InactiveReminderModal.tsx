@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 const STORAGE_KEY = 'lifepulse_inactive_reminder_dismissed'
@@ -17,6 +18,7 @@ type InactiveReminderModalProps = {
 }
 
 export const InactiveReminderModal = ({ daysInactive, onDismiss }: InactiveReminderModalProps) => {
+  const { t } = useTranslation()
   const handleLater = () => {
     setInactiveReminderDismissed()
     onDismiss()
@@ -24,20 +26,20 @@ export const InactiveReminderModal = ({ daysInactive, onDismiss }: InactiveRemin
 
   const message =
     daysInactive === null
-      ? "You haven't logged any entries yet. Log today?"
-      : `You haven't logged in ${daysInactive} days. Log today?`
+      ? t('inactiveReminder.noEntriesYet')
+      : t('inactiveReminder.daysInactive', { count: daysInactive })
 
   return (
     <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="inactive-reminder-title">
       <div className="onboarding-modal card">
-        <h2 id="inactive-reminder-title">Reminder</h2>
+        <h2 id="inactive-reminder-title">{t('inactiveReminder.title')}</h2>
         <p>{message}</p>
         <div className="onboarding-actions">
           <Link to="/health" className="onboarding-btn primary" onClick={onDismiss}>
-            Log today
+            {t('inactiveReminder.logToday')}
           </Link>
           <button type="button" className="secondary" onClick={handleLater}>
-            Later
+            {t('inactiveReminder.later')}
           </button>
         </div>
       </div>

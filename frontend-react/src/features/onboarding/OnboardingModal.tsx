@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 const ONBOARDING_STORAGE_KEY = 'lifepulse_onboarding_completed'
@@ -16,6 +17,7 @@ type OnboardingModalProps = {
 }
 
 export const OnboardingModal = ({ onDismiss }: OnboardingModalProps) => {
+  const { t } = useTranslation()
   const handleDismiss = () => {
     setOnboardingCompleted()
     onDismiss()
@@ -24,21 +26,15 @@ export const OnboardingModal = ({ onDismiss }: OnboardingModalProps) => {
   return (
     <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <div className="onboarding-modal card">
-        <h2 id="onboarding-title">Welcome to LifePulse</h2>
-        <p>
-          This is your personal dashboard. Track <strong>health</strong>, <strong>finance</strong>,{' '}
-          <strong>productivity</strong>, and <strong>learning</strong> in one place. Your data builds
-          trends, correlations, and insights over time.
-        </p>
-        <p>
-          Add your first entry to get started — for example, log today&apos;s sleep and energy in Health.
-        </p>
+        <h2 id="onboarding-title">{t('onboarding.welcome')}</h2>
+        <p dangerouslySetInnerHTML={{ __html: t('onboarding.body1') }} />
+        <p>{t('onboarding.body2')}</p>
         <div className="onboarding-actions">
           <Link to="/health" className="onboarding-btn primary" onClick={handleDismiss}>
-            Add first entry (Health)
+            {t('onboarding.addFirstEntry')}
           </Link>
           <button type="button" className="secondary" onClick={handleDismiss}>
-            Explore dashboard
+            {t('onboarding.exploreDashboard')}
           </button>
         </div>
       </div>

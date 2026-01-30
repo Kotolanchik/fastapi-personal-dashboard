@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 
 import { OnboardingModal, isOnboardingCompleted } from '../onboarding/OnboardingModal'
@@ -65,13 +66,13 @@ const toLearningChart = (data: LearningEntry[]) =>
     study: entry.study_hours,
   }))
 
-const EXPORT_OPTIONS: { value: ExportCategory; label: string }[] = [
-  { value: 'daily', label: 'Daily summary' },
-  { value: 'all', label: 'All data' },
-  { value: 'health', label: 'Health' },
-  { value: 'finance', label: 'Finance' },
-  { value: 'productivity', label: 'Productivity' },
-  { value: 'learning', label: 'Learning' },
+const EXPORT_OPTIONS_KEYS: { value: ExportCategory; key: string }[] = [
+  { value: 'daily', key: 'dashboard.dailySummary' },
+  { value: 'all', key: 'dashboard.allData' },
+  { value: 'health', key: 'nav.health' },
+  { value: 'finance', key: 'nav.finance' },
+  { value: 'productivity', key: 'nav.productivity' },
+  { value: 'learning', key: 'nav.learning' },
 ]
 
 const INACTIVE_DAYS_THRESHOLD = 3
@@ -99,7 +100,8 @@ function daysSince(dateStr: string): number {
 }
 
 export const DashboardPage = () => {
-  usePageTitle('Dashboard')
+  const { t } = useTranslation()
+  usePageTitle(t('nav.dashboard'))
   const toast = useToast()
   const [exporting, setExporting] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted())
@@ -157,9 +159,9 @@ export const DashboardPage = () => {
     setExporting(true)
     try {
       await downloadCsv(exportCategory)
-      toast.success('CSV downloaded.')
+      toast.success(t('dashboard.csvDownloaded'))
     } catch {
-      toast.error('Download failed.')
+      toast.error(t('dashboard.downloadFailed'))
     } finally {
       setExporting(false)
     }
@@ -192,7 +194,7 @@ export const DashboardPage = () => {
       )}
       {goalsProgress.length > 0 && (
         <section className="card">
-          <h3>Goals progress</h3>
+          <h3>{t('dashboard.goalsProgress')}</h3>
           <div className="grid cards" style={{ marginTop: '0.5rem' }}>
             {goalsProgress.map((p: GoalProgress) => (
               <div key={p.goal_id} className="card">
@@ -210,8 +212,8 @@ export const DashboardPage = () => {
                 ) : (
                   <p className="muted">
                     {p.current_value != null
-                      ? `Current: ${p.current_value.toFixed(1)} (add target in Settings)`
-                      : 'Add entries to see progress'}
+                      ? t('dashboard.currentValueTarget', { current: p.current_value.toFixed(1) })
+                      : t('dashboard.addEntriesToProgress')}
                   </p>
                 )}
               </div>
@@ -220,36 +222,36 @@ export const DashboardPage = () => {
         </section>
       )}
       <div className="card export-bar">
-        <h3>Export data</h3>
-        <p className="muted">Download your entries as CSV.</p>
+        <h3>{t('dashboard.exportData')}</h3>
+        <p className="muted">{t('dashboard.exportSubtitle')}</p>
         <div className="export-actions">
           <select
             value={exportCategory}
             onChange={(e) => setExportCategory(e.target.value as ExportCategory)}
-            aria-label="Export category"
+            aria-label={t('dashboard.exportCategory')}
           >
-            {EXPORT_OPTIONS.map((opt) => (
+            {EXPORT_OPTIONS_KEYS.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.key)}
               </option>
             ))}
           </select>
           <button type="button" disabled={exporting} onClick={handleDownloadCsv}>
-            {exporting ? '…' : 'Download CSV'}
+            {exporting ? '…' : t('dashboard.downloadCsv')}
           </button>
         </div>
       </div>
       <div className="card">
-        <h3>Last week in numbers</h3>
-        <p className="muted">Sums, averages, and one insight for the past 7 days.</p>
+        <h3>{t('dashboard.lastWeekNumbers')}</h3>
+        <p className="muted">{t('dashboard.lastWeekSubtitle')}</p>
         <Link to="/weekly-report" className="primary">
-          View last week →
+          {t('dashboard.viewLastWeek')}
         </Link>
       </div>
       {trendThisMonth.data && trendThisMonth.data.length > 0 && (
         <section className="card">
-          <h3>Trend this month</h3>
-          <p className="muted">This month vs previous month (↑ up, ↓ down).</p>
+          <h3>{t('dashboard.trendThisMonth')}</h3>
+          <p className="muted">{t('dashboard.trendThisMonthSubtitle')}</p>
           <div className="grid cards" style={{ marginTop: '0.5rem' }}>
             {trendThisMonth.data.map((m: TrendThisMonthItem) => (
               <div key={m.metric} className="card">
@@ -266,12 +268,12 @@ export const DashboardPage = () => {
       )}
       {weekdayTrends.data && (weekdayTrends.data.best_worst_weekday?.length > 0 || weekdayTrends.data.trends_14?.length > 0 || weekdayTrends.data.trends_30?.length > 0) && (
         <section className="card">
-          <h3>By weekday & recent trends</h3>
+          <h3>{t('dashboard.byWeekdayTrends')}</h3>
           {weekdayTrends.data.best_worst_weekday?.length > 0 && (
             <div style={{ marginBottom: '0.5rem' }}>
               {weekdayTrends.data.best_worst_weekday.map((b: BestWorstWeekdayItem) => (
                 <p key={b.metric} className="muted" style={{ margin: '0.25rem 0' }}>
-                  <strong>{b.metric.replace(/_/g, ' ')}:</strong> best {b.best_weekday} ({b.best_value}), worst {b.worst_weekday} ({b.worst_value})
+                  <strong>{b.metric.replace(/_/g, ' ')}:</strong> {t('common.best')} {b.best_weekday} ({b.best_value}), {t('common.worst')} {b.worst_weekday} ({b.worst_value})
                 </p>
               ))}
             </div>
@@ -288,7 +290,7 @@ export const DashboardPage = () => {
       )}
       <section className="grid cards">
         <div className="card">
-          <h4>Sleep avg</h4>
+          <h4>{t('dashboard.sleepAvg')}</h4>
           <p className="metric">
             {health.data?.length
               ? (health.data.reduce((sum, item) => sum + item.sleep_hours, 0) / health.data.length).toFixed(1)
@@ -296,7 +298,7 @@ export const DashboardPage = () => {
           </p>
         </div>
         <div className="card">
-          <h4>Total income</h4>
+          <h4>{t('dashboard.totalIncome')}</h4>
           <p className="metric">
             {finance.data?.length
               ? finance.data.reduce((sum, item) => sum + item.income, 0).toFixed(0)
@@ -304,7 +306,7 @@ export const DashboardPage = () => {
           </p>
         </div>
         <div className="card">
-          <h4>Deep work hours</h4>
+          <h4>{t('dashboard.deepWorkHours')}</h4>
           <p className="metric">
             {productivity.data?.length
               ? productivity.data.reduce((sum, item) => sum + item.deep_work_hours, 0).toFixed(1)
@@ -312,7 +314,7 @@ export const DashboardPage = () => {
           </p>
         </div>
         <div className="card">
-          <h4>Study hours</h4>
+          <h4>{t('dashboard.studyHours')}</h4>
           <p className="metric">
             {learning.data?.length
               ? learning.data.reduce((sum, item) => sum + item.study_hours, 0).toFixed(1)
@@ -323,7 +325,7 @@ export const DashboardPage = () => {
 
       <section className="grid charts">
         <div className="card">
-          <h3>Health trends</h3>
+          <h3>{t('dashboard.healthTrends')}</h3>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={health.data ? toChart(health.data) : []}>
               <XAxis dataKey="date" />
@@ -336,7 +338,7 @@ export const DashboardPage = () => {
           </ResponsiveContainer>
         </div>
         <div className="card">
-          <h3>Finance trends</h3>
+          <h3>{t('dashboard.financeTrends')}</h3>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={finance.data ? toFinanceChart(finance.data) : []}>
               <XAxis dataKey="date" />
@@ -360,7 +362,7 @@ export const DashboardPage = () => {
           </ResponsiveContainer>
         </div>
         <div className="card">
-          <h3>Learning</h3>
+          <h3>{t('dashboard.learningTrends')}</h3>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={learning.data ? toLearningChart(learning.data) : []}>
               <XAxis dataKey="date" />
@@ -374,7 +376,7 @@ export const DashboardPage = () => {
 
       <section className="grid columns">
         <div className="card">
-          <h3>Correlations</h3>
+          <h3>{t('dashboard.correlations')}</h3>
           {correlations.data?.correlations?.length ? (
             <ul className="list">
               {correlations.data.correlations.map((item) => (
@@ -385,14 +387,14 @@ export const DashboardPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="muted">No data for correlations yet.</p>
+            <p className="muted">{t('dashboard.noCorrelations')}</p>
           )}
         </div>
         <div className="card">
-          <h3>Insights</h3>
+          <h3>{t('dashboard.insights')}</h3>
           {insightOfTheWeek.data && (
             <div className="insight-of-the-week" style={{ marginBottom: '0.75rem', padding: '0.5rem', background: 'var(--surface)', borderRadius: 4 }}>
-              <strong>Insight of the week</strong>
+              <strong>{t('dashboard.insightOfTheWeek')}</strong>
               <p style={{ margin: '0.25rem 0 0' }}>{insightOfTheWeek.data}</p>
             </div>
           )}
@@ -403,11 +405,11 @@ export const DashboardPage = () => {
               ))}
             </ul>
           ) : (
-            !insightOfTheWeek.data && <p className="muted">No insights yet.</p>
+            !insightOfTheWeek.data && <p className="muted">{t('dashboard.noInsights')}</p>
           )}
         </div>
         <div className="card">
-          <h3>Recommendations</h3>
+          <h3>{t('dashboard.recommendations')}</h3>
           {recommendations.data?.recommendations?.length ? (
             <ul className="list">
               {recommendations.data.recommendations.map((item, index) => (
@@ -415,7 +417,7 @@ export const DashboardPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="muted">No recommendations yet.</p>
+            <p className="muted">{t('dashboard.noRecommendations')}</p>
           )}
         </div>
       </section>

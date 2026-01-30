@@ -11,6 +11,7 @@ from .routes import (
     health,
     integrations,
     learning,
+    llm,
     productivity,
 )
 
@@ -27,3 +28,4 @@ api_router.include_router(auth.router)
 api_router.include_router(admin.router)
 api_router.include_router(integrations.router)
 api_router.include_router(billing.router)
+api_router.include_router(llm.router)
