@@ -130,6 +130,11 @@ td {
   border: 1px solid #e2e8f0;
 }
 
+.card.banner {
+  border-left: 4px solid #64748b;
+  background: #f8fafc;
+}
+
 .grid {
   display: grid;
   gap: 1.5rem;
@@ -159,6 +164,10 @@ td {
 
 .muted {
   color: #64748b;
+}
+
+.small {
+  font-size: 0.875rem;
 }
 
 .capitalize {
@@ -411,6 +420,22 @@ td {
 
 .landing-cta:hover {
   opacity: 0.9;
+}
+
+.landing-free-note {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.landing-social {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.landing-social-text {
+  font-size: 0.95rem;
+  color: #64748b;
 }
 
 .landing-footer {

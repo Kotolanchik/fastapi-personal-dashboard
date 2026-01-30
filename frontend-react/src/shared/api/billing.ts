@@ -1,3 +1,4 @@
+import axios from 'axios'
 import api from './client'
 
 export type Plan = {
@@ -28,5 +29,12 @@ export const listPlans = () =>
 export const subscribePlan = (planId: number) =>
   api.post<Subscription>('/billing/subscribe', { plan_id: planId }).then((res) => res.data)
 
-export const getSubscription = () =>
-  api.get<Subscription>('/billing/subscription').then((res) => res.data)
+/** Returns subscription or null when user has no subscription (404). Avoids global error banner. */
+export const getSubscription = (): Promise<Subscription | null> =>
+  api
+    .get<Subscription>('/billing/subscription')
+    .then((res) => res.data)
+    .catch((err) => {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return null
+      throw err
+    })

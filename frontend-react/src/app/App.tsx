@@ -1,8 +1,9 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { LoginPage } from '../features/auth/LoginPage'
 import { RegisterPage } from '../features/auth/RegisterPage'
 import { RequireAuth } from '../features/auth/RequireAuth'
+import { useAuth } from '../features/auth/AuthContext'
 import { BillingPage } from '../features/billing/BillingPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
@@ -19,11 +20,17 @@ import { TermsPage } from '../features/legal/TermsPage'
 import { ApiErrorBanner } from '../shared/components/ApiErrorBanner'
 import { Layout } from '../shared/components/Layout'
 
+const LandingOrRedirect = () => {
+  const { token } = useAuth()
+  if (token) return <Navigate to="/dashboard" replace />
+  return <LandingPage />
+}
+
 export const App = () => (
   <>
     <ApiErrorBanner />
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<LandingOrRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />

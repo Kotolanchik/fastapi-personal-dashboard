@@ -43,6 +43,10 @@ export const IntegrationsPage = () => {
 
   return (
     <div className="stack">
+      <div className="card banner muted" role="status">
+        OAuth for Google Fit / Apple Health coming soon. For now you can connect sources using
+        tokens below.
+      </div>
       <div className="card">
         <h3>Connect integration</h3>
         <div className="form-grid">

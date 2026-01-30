@@ -11,6 +11,14 @@
 
 ### Добавлено
 
+- **Ревью LifePulse (промпты по действиям)**
+  - Лендинг: hero переписан на выгоды и ЦА («люди, ведущие дневники и трекеры»); заголовок и подзаголовок отвечают на «зачем» и «что получу»; добавлен блок про бесплатный аккаунт и премиум «coming soon»; блок социального доказательства («Join others who track their life data»).
+  - UX: при залогиненном пользователе переход на `/` автоматически перенаправляет на `/dashboard`.
+  - UI: весь интерфейс на английском (подпись «Пароль» заменена на «Password»).
+  - Billing: на странице Billing явная пометка «Billing is in demo mode. No real charges.»; для планов добавлены краткие описания фич (Free/Pro); в README указано, что оплата пока не подключена.
+  - index.html: meta description и Open Graph (og:title, og:description, og:type).
+  - Integrations: баннер «OAuth for Google Fit / Apple Health coming soon. For now you can connect with tokens below.»
+  - README: в разделе «Развёртывание одной командой» добавлена фраза про миграции при старте backend; раздел Backlog с пунктами Forgot password и подключение оплаты.
 - **Напоминание о неактивности**  
   При входе на дашборд проверяется давность последней записи (по всем сферам). Если записей нет или последняя старше 3 дней — показывается модальное окно: «You haven't logged in X days. Log today?» с кнопками «Log today» (переход в форму Health) и «Later» (скрыть до конца сессии).
 

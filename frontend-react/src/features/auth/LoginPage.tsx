@@ -53,7 +53,7 @@ export const LoginPage = () => {
             {fieldErrors.email ? <div className="field-error">{fieldErrors.email}</div> : null}
           </label>
           <label>
-            Пароль
+            Password
             <input
               type="password"
               value={password}

@@ -14,7 +14,7 @@ MVP‑приложение для личной аналитики: сбор да
 - Базовая аутентификация (JWT) и роли
 - Кэширование аналитики (Redis, опционально)
 - Интеграции (Google Fit, Apple Health, Open Banking — базовый каркас)
-- Тарифы и подписки (каркас монетизации)
+- Тарифы и подписки (каркас монетизации; оплата пока не подключена — демо-режим)
 
 ## Архитектура
 
@@ -117,7 +117,7 @@ make up
 docker compose -f docker-compose.full.yml up --build
 ```
 
-После запуска: **http://localhost:5173** — React, **http://localhost:8000** — API. Остановка: `make down` или `docker compose -f docker-compose.full.yml down`.
+После запуска: **http://localhost:5173** — React, **http://localhost:8000** — API. При первом запуске backend выполняет миграции БД (`alembic upgrade head`). Остановка: `make down` или `docker compose -f docker-compose.full.yml down`.
 
 ## Быстрый старт (локально)
 
@@ -317,6 +317,11 @@ pytest
 - `GET /analytics/insights`
 - `GET /analytics/recommendations`
 - `GET /export?category=health|finance|productivity|learning|daily`
+
+## Backlog / Planned
+
+- Forgot password flow (email reset link)
+- Подключение реальной оплаты (Stripe и т.п.) для тарифов
 
 ## Перспективы развития
 

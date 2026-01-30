@@ -15,11 +15,11 @@ export const LandingPage = () => (
       </nav>
     </header>
     <section className="landing-hero">
-      <h2>Track health, finance, productivity & learning in one place</h2>
+      <h2>See how sleep, money, and focus connect — decide from your own data</h2>
       <p>
-        LifePulse helps you log daily metrics, see trends, and get simple insights. Add entries for
-        sleep, income, deep work, study time, and more — then view charts and correlations on your
-        dashboard.
+        For anyone who tracks life in journals and spreadsheets: one place to log health, finance,
+        productivity, and learning, then spot trends and correlations. Make better choices, not
+        guesswork.
       </p>
       <ul className="landing-features">
         <li>Health: sleep, energy, wellbeing</li>
@@ -30,6 +30,16 @@ export const LandingPage = () => (
       <Link to="/register" className="landing-cta">
         Create free account
       </Link>
+      <p className="landing-free-note">
+        Free sign-up and core dashboard. Premium plans (deeper analytics, integrations) coming
+        soon.
+      </p>
+    </section>
+    <section className="landing-social">
+      <p className="landing-social-text">
+        Join others who track their life data
+        {/* TODO: replace with real stats, e.g. "X+ entries logged" or "X users" */}
+      </p>
     </section>
     <footer className="landing-footer">
       <Link to="/privacy">Privacy Policy</Link>

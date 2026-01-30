@@ -21,8 +21,19 @@ export const BillingPage = () => {
     },
   })
 
+  const planFeatures: Record<string, string> = {
+    free: 'Unlimited entries, CSV export, basic insights',
+    Free: 'Unlimited entries, CSV export, basic insights',
+    pro: 'Advanced analytics, integrations, priority support',
+    Pro: 'Advanced analytics, integrations, priority support',
+  }
+
   return (
     <div className="stack">
+      <div className="card banner muted" role="status">
+        <strong>Billing is in demo mode.</strong> No real charges. Subscriptions are stored in the
+        database only; payment integration is not connected.
+      </div>
       <div className="card">
         <h3>Available plans</h3>
         {plans.data?.length ? (
@@ -32,6 +43,9 @@ export const BillingPage = () => {
                 <h4>{plan.name}</h4>
                 <p className="metric">
                   {plan.price_monthly} {plan.currency}
+                </p>
+                <p className="muted small">
+                  {planFeatures[plan.name] ?? 'See plan details'}
                 </p>
                 <button onClick={() => subscribeMutation.mutate(plan.id)}>
                   Subscribe
