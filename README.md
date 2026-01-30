@@ -1,148 +1,52 @@
 # fastapi-personal-dashboard
 
-MVP‑приложение для личной аналитики: сбор данных по здоровью, финансам,
-эффективности и обучению с дашбордами, корреляциями и инсайтами.
+MVP‑приложение для личной аналитики: сбор данных по здоровью, финансам, продуктивности и обучению с дашбордами, корреляциями, инсайтами и интеграциями.
 
-## Возможности (MVP)
+---
 
-- Ручной ввод данных по 4 сферам жизни
-- Редактирование и удаление записей
-- Дашборды и временные ряды
-- Корреляции и 1–2 персональных инсайта
-- Экспорт в CSV
-- Поддержка часовых поясов
-- Базовая аутентификация (JWT) и роли
-- Кэширование аналитики (Redis, опционально)
-- Интеграции (Google Fit, Apple Health, Open Banking — базовый каркас)
-- Тарифы и подписки (каркас монетизации; оплата пока не подключена — демо-режим)
+## Как запустить приложение
 
-## Архитектура
+### Вариант 1 — всё в Docker (рекомендуется)
 
-- **Backend**: FastAPI + SQLAlchemy + SQLite/Postgres
-- **Frontend**: Streamlit (позже можно заменить на React/Vue)
-- **DWH**: витрина данных с измерениями/фактами
-- **Analytics**: Pandas + NumPy + Statsmodels
-- **Cache**: Redis (опционально)
+Из корня проекта:
 
-## Структура проекта
-
-```
-backend/
-  app/
-    api/
-      deps.py             # зависимости (DB, auth)
-      router.py           # агрегатор роутов
-      routes/
-        analytics.py      # /analytics
-        auth.py           # /auth
-        admin.py          # /admin (RBAC)
-        export.py         # /export
-        finance.py        # /finance CRUD
-        health.py         # /health CRUD
-        learning.py       # /learning CRUD
-        productivity.py   # /productivity CRUD
-    core/
-      config.py           # настройки окружения
-      constants.py        # роли и константы
-      security.py         # хеширование паролей + JWT
-    integrations/         # интеграции с внешними источниками
-    ml/                   # базовые рекомендации/ML
-    services/
-      entries.py          # общие CRUD‑операции
-      cache.py            # Redis кэширование
-      users.py            # управление пользователями
-    analytics.py          # корреляции и инсайты
-    database.py           # подключение к БД
-    main.py               # точка входа FastAPI
-    models.py             # модели SQLAlchemy
-    schemas.py            # схемы Pydantic
-    utils.py              # timezone‑хелперы
-alembic/                  # миграции приложения
-alembic.ini               # Alembic конфиг
-frontend/
-  app.py                  # Streamlit UI
-frontend-react/
-  src/                    # React UI (TypeScript)
-  .env.example            # Vite env
-etl/
-  export.py               # экспорт CSV
-dwh/
-  alembic/                # миграции DWH
-  alembic.ini             # DWH Alembic
-  etl/
-    load_dwh.py           # загрузка данных в DWH
-    export_parquet.py     # экспорт в Parquet
-  duckdb/
-    build_duckdb.py       # сборка DuckDB витрины
-  dbt/
-    dbt_project.yml       # dbt проект
-    profiles.example.yml  # пример профиля
-    models/metrics/       # dbt модели
-  database.py             # подключение DWH
-  models.py               # DWH схема
-tests/                    # pytest
-.github/workflows/ci.yml  # CI
-.github/workflows/docker-publish.yml # Docker registry + CI/CD
-.pre-commit-config.yaml   # git hooks
-pyproject.toml            # ruff config
-requirements-dev.txt      # dev зависимости
-requirements-dwh.txt      # bigdata стек
-deploy/k8s/               # Kubernetes манифесты
-  configmap.yaml          # конфиг приложения
-  secret.example.yaml     # секреты (пример)
-  redis.yaml              # Redis (опционально)
-  migrate-job.yaml        # миграции
-deploy/helm/personal-dashboard/ # Helm chart
-docker-compose.yml        # локальная разработка
-docker-compose.prod.yml   # production‑схема
-docker-compose.managed.yml # managed Postgres/Redis
-docker-compose.react.yml  # React + backend
-Dockerfile.frontend-react # React production image
-.env.example              # пример окружения
-.env.prod.example         # окружение для продакшена
-Makefile                  # команды для быстрого запуска
+```bash
+docker compose -f docker-compose.full.yml up --build
 ```
 
-## Развёртывание одной командой
+Поднимаются: **Postgres**, **Redis**, **backend** (миграции выполняются при старте), **React‑фронт**.
 
-Нужен только **Docker** (Node/npm не требуются).
+После запуска:
+- **http://localhost:5173** — интерфейс (React)
+- **http://localhost:8000** — API (FastAPI)
+- **http://localhost:8000/docs** — Swagger
 
-**Полный стек (продакшен-сборка):**
+Остановка: `Ctrl+C`. При необходимости: `docker compose -f docker-compose.full.yml down`.
 
-| Способ | Команда |
-|--------|--------|
-| Windows CMD | `run.cmd` |
-| Windows PowerShell | `.\run.ps1` |
-| Любая ОС | `docker compose -f docker-compose.full.yml up --build` |
-| С Make (Linux/macOS) | `make up` |
+### Вариант 2 — режим разработки (hot reload)
 
-**Режим разработки (hot reload, без пересборки):**
+Первый раз с пересборкой образов:
 
-| Способ | Команда |
-|--------|--------|
-| Windows CMD | `run-dev.cmd` |
-| Windows PowerShell | `.\run-dev.ps1` |
-| Любая ОС | `docker compose -f docker-compose.dev.yml up` |
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
 
-Первый запуск dev: `docker compose -f docker-compose.dev.yml up --build` (чтобы собрать образ backend).
+Дальше: `docker compose -f docker-compose.dev.yml up` (или `.\run-dev.ps1` в PowerShell, `run-dev.cmd` в CMD).
 
-После запуска: **http://localhost:5173** — интерфейс, **http://localhost:8000** — API. Остановка: **Ctrl+C**, затем при необходимости `docker compose -f docker-compose.full.yml down` или `docker compose -f docker-compose.dev.yml down`.
+### Вариант 3 — локально без Docker
 
-*(Если установлен npm: можно использовать `npm start` и `npm run dev` — они вызывают те же команды docker compose.)*
-
-## Быстрый старт (локально)
+**Терминал 1 — backend:**
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+.venv\Scripts\activate
 pip install -r requirements.txt
-
+set DATABASE_URL=sqlite:///./data/app.db
 alembic upgrade head
 uvicorn backend.app.main:app --reload --port 8000
-streamlit run frontend/app.py
 ```
 
-### React UI (рекомендуем)
+**Терминал 2 — React:**
 
 ```bash
 cd frontend-react
@@ -150,105 +54,158 @@ npm install
 npm run dev
 ```
 
-Откройте http://localhost:5173 для React‑интерфейса.
+Интерфейс: **http://localhost:5173**, API: **http://localhost:8000**. Фронт по умолчанию использует `VITE_API_URL=http://localhost:8000`.
 
-Откройте http://localhost:8501, зарегистрируйтесь и войдите.
+### Запуск одной командой (Windows)
 
-## Быстрый старт (Docker)
+| Режим   | CMD              | PowerShell       |
+|--------|-------------------|------------------|
+| Полный стек | `run.cmd`         | `.\run.ps1`      |
+| Dev    | `run-dev.cmd`     | `.\run-dev.ps1`  |
 
-**Рекомендуется (полный стек):** `make up` или `docker compose -f docker-compose.full.yml up --build` — Postgres, Redis, Backend, React.
+---
 
-Лёгкий вариант (без Postgres, Streamlit): `docker compose up --build`.
+## Возможности (MVP)
 
-React + Backend без Postgres: `docker compose -f docker-compose.react.yml up --build`.
+- **Четыре сферы**: Здоровье, Финансы, Продуктивность, Обучение — ручной ввод, CRUD, дашборды и временные ряды.
+- **Здоровье**: несколько записей в день (day/morning/evening), шаги, пульс, тренировки; экспорт отчёта для врача (CSV).
+- **Обучение**: справочник курсов/тем, привязка записей к курсу, тип источника (книга/курс/подкаст), streak (дни подряд).
+- **Продуктивность**: задачи с дедлайнами и статусами, сессии фокуса (Pomodoro/deep_work), категория фокуса; дашборд продуктивности (лучшие дни/часы, тренды, разбивка по категориям).
+- **Цели**: до 5 целей (лимит по сфере настраивается), прогресс по метрикам, цели «закончить курс»; архивация.
+- **Аналитика**: корреляции, инсайты, рекомендации, еженедельный отчёт, кэширование в Redis (опционально).
+- **Экспорт**: CSV (дневная сводка, по категориям), отчёт по здоровью за период.
+- **Интеграции**: Google Fit (OAuth, шаги), Apple Health (импорт XML/ZIP), Open Banking (mock/токены); статус синка, последняя ошибка, «обновить сейчас», настройка метрик в дашборде.
+- **Напоминания**: API и баннер на дашборде («заполни здоровье за вчера»); email‑напоминания (опционально, через воркер).
+- **AI Assistant**: чат и инсайт по данным (OpenAI‑совместимый API, в т.ч. Ollama).
+- **Аутентификация**: JWT, сброс пароля по email, роли user/admin; виджеты дашборда и настройки уведомлений в профиле.
+- **Категории расходов**: маппинг категорий провайдера в свои (для Open Banking).
+- **Биллинг**: каркас тарифов и подписок (оплата не подключена — демо).
 
-## Быстрый старт (Makefile)
+---
 
-```bash
-make install
-make migrate
-make run-backend
+## Архитектура
+
+- **Backend**: FastAPI, SQLAlchemy, Alembic; SQLite или Postgres; опционально Redis; rate limit (slowapi).
+- **Frontend**: React (Vite, TypeScript), TanStack Query, React Router, i18next (EN/RU).
+- **DWH**: витрина данных (Alembic, Parquet, DuckDB, dbt) — отдельный контур.
+- **Аналитика**: Pandas, NumPy, Statsmodels; рекомендации в `ml/`.
+
+---
+
+## Структура проекта
+
+```
+backend/
+  app/
+    api/
+      deps.py              # зависимости (DB, auth)
+      router.py            # агрегатор роутов
+      routes/
+        admin.py           # /admin (RBAC)
+        analytics.py       # /analytics
+        auth.py            # /auth (в т.ч. forgot/reset password)
+        billing.py         # /billing
+        export.py          # /export (CSV, health-report)
+        finance.py         # /finance, /finance/category-mappings
+        goals.py            # /goals
+        health.py           # /health
+        integrations.py    # /integrations (providers, sync, OAuth, Apple Health import)
+        learning.py        # /learning, /learning/courses, /learning/streak
+        llm.py              # /llm (chat, insight)
+        productivity.py    # /productivity, /productivity/tasks, /productivity/sessions
+        reminders.py        # /reminders
+    core/
+      config.py            # настройки (в т.ч. интеграции, rate limit, SMTP)
+      constants.py         # роли, лимиты целей
+      security.py          # JWT, хеширование паролей
+    integrations/          # Google Fit, Apple Health, Open Banking
+    llm/                   # клиент OpenAI-совместимого API
+    ml/                    # рекомендации
+    services/
+      entries.py           # CRUD записей
+      goals.py             # логика целей и прогресса
+      users.py             # профиль, сброс пароля
+      cache.py             # Redis
+    tasks/
+      reminder_emails.py   # рассылка напоминаний (cron)
+    analytics.py           # корреляции, инсайты, weekly-report, productivity-dashboard
+    database.py
+    main.py                # FastAPI, rate limit
+    models.py
+    schemas.py
+    utils.py
+alembic/
+  versions/                # миграции приложения
+alembic.ini
+frontend/
+  app.py                   # Streamlit (альтернативный UI)
+frontend-react/
+  src/
+    app/                   # App, providers
+    features/              # dashboard, auth, entries (Health/Finance/Productivity/Learning),
+                           # goals, integrations, settings, assistant, reports, billing
+    shared/                # api (client, entries, goals, integrations, analytics, …), components, hooks, utils
+    locales/               # en.json, ru.json
+  package.json
+dwh/
+  alembic/, dbt/, duckdb/, etl/
+  database.py, models.py
+tests/                     # pytest (auth, entries, smoke)
+.github/workflows/
+  ci.yml                   # миграции + pytest + frontend lint
+  docker-publish.yml      # сборка и публикация образов
+.pre-commit-config.yaml   # ruff, ESLint
+pyproject.toml            # ruff
+requirements.txt
+requirements-dev.txt
+requirements-dwh.txt
+docker-compose.full.yml    # Postgres + Redis + backend + frontend
+docker-compose.dev.yml     # режим разработки (hot reload)
+docker-compose.prod.yml
+docker-compose.managed.yml # внешние Postgres/Redis
+Dockerfile.backend
+Dockerfile.frontend-react
+.env.example
+.env.prod.example
+deploy/k8s/                # Kubernetes манифесты
+deploy/helm/              # Helm chart
 ```
 
-Во втором терминале:
-
-```bash
-make run-frontend
-```
-
-## Production‑схема деплоя
-
-### Docker Compose (production)
-
-```bash
-docker compose -f docker-compose.prod.yml up --build
-```
-
-Для managed Postgres/Redis:
-
-```bash
-docker compose -f docker-compose.managed.yml up --build
-```
-
-### Kubernetes
-
-```bash
-kubectl apply -f deploy/k8s/namespace.yaml
-kubectl apply -f deploy/k8s/configmap.yaml
-kubectl apply -f deploy/k8s/secret.example.yaml
-kubectl apply -f deploy/k8s/postgres.yaml
-kubectl apply -f deploy/k8s/redis.yaml
-kubectl apply -f deploy/k8s/migrate-job.yaml
-kubectl apply -f deploy/k8s/backend.yaml
-kubectl apply -f deploy/k8s/frontend.yaml
-kubectl apply -f deploy/k8s/ingress.yaml
-```
-
-Для managed Postgres/Redis не применяйте `postgres.yaml` и `redis.yaml`,
-а укажите внешние URL в секрете.
-
-### Helm
-
-```bash
-helm install personal-dashboard deploy/helm/personal-dashboard \
-  --set secrets.databaseUrl=... \
-  --set secrets.redisUrl=... \
-  --set secrets.secretKey=...
-```
-
-## Аутентификация и роли (RBAC)
-
-- Роли: `user`, `admin`
-- Все записи привязаны к пользователю
-- Админские эндпоинты: `/admin/*`
-
-Чтобы назначить администратора:
-
-```sql
-UPDATE users SET role='admin' WHERE email='admin@example.com';
-```
+---
 
 ## Переменные окружения
 
-Скопируйте `.env.example` в `.env`, для продакшена используйте `.env.prod.example`.
+Скопируйте `.env.example` в `.env`; для продакшена — `.env.prod.example`.
 
-**Backend:**
-- `DATABASE_URL` (по умолчанию `sqlite:///./data/app.db`)
-- `CORS_ORIGINS` (по умолчанию `*`)
-- `SECRET_KEY` (обязательно в проде)
-- `ACCESS_TOKEN_EXPIRE_MINUTES` (по умолчанию 120)
-- `AUTO_CREATE_TABLES` (по умолчанию false)
-- `REDIS_URL` (опционально, для кэша)
-- `CACHE_TTL_SECONDS` (по умолчанию 300)
+**Backend (основные):**
+- `DATABASE_URL` — по умолчанию `sqlite:///./data/app.db`
+- `SECRET_KEY` — обязательно в проде
+- `CORS_ORIGINS` — по умолчанию `*`
+- `ACCESS_TOKEN_EXPIRE_MINUTES` — по умолчанию 120
+- `REDIS_URL` — опционально (кэш)
+- `CACHE_TTL_SECONDS` — по умолчанию 300
+- `RATE_LIMIT_DEFAULT` — по умолчанию `200/minute`
 
-**Frontend:**
-- `API_URL` (по умолчанию `http://localhost:8000`)
+**Интеграции:**
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` — Google Fit OAuth
+- `SYNC_MIN_INTERVAL_SECONDS` — минимум секунд между синками (по умолчанию 900)
+- `MAX_IMPORT_FILE_SIZE_MB` — лимит размера файла Apple Health (по умолчанию 100)
 
-**React frontend (Vite):**
-- `VITE_API_URL` (по умолчанию `http://localhost:8000`)
+**LLM:**
+- `LLM_API_KEY` — OpenAI (или другой ключ)
+- `LLM_BASE_URL` — для Ollama и др. (например `http://localhost:11434/v1`)
+- `LLM_MODEL` — по умолчанию `gpt-4o-mini`
+
+**Уведомления (email):**
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` — для рассылки напоминаний (запуск воркера: `backend.app.tasks.reminder_emails` по расписанию).
+
+**React (Vite):**
+- `VITE_API_URL` — по умолчанию `http://localhost:8000`
 
 **DWH:**
-- `DWH_DATABASE_URL` (по умолчанию `sqlite:///./data/dwh.db`)
+- `DWH_DATABASE_URL` — по умолчанию `sqlite:///./data/dwh.db`
+
+---
 
 ## Миграции (Alembic)
 
@@ -256,54 +213,58 @@ UPDATE users SET role='admin' WHERE email='admin@example.com';
 alembic upgrade head
 ```
 
-### Автогенерация миграций
+Автогенерация:
 
 ```bash
 alembic revision --autogenerate -m "описание"
 ```
 
-DWH миграции:
+Миграции DWH:
 
 ```bash
 alembic -c dwh/alembic.ini upgrade head
 ```
 
-## BigData витрины (Parquet + DuckDB + dbt)
+---
 
-Установить стек:
+## API (основное)
 
-```bash
-pip install -r requirements-dwh.txt
-```
+- **Auth**: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/forgot-password`, `POST /auth/reset-password`
+- **Admin**: `GET /admin/users`, `PUT /admin/users/{id}/role`
+- **Health**: `POST|GET|PUT|DELETE /health` (пагинация: `offset`, `limit`; заголовок `X-Total-Count`)
+- **Finance**: `POST|GET|PUT|DELETE /finance`, `GET|POST|PUT|DELETE /finance/category-mappings`
+- **Productivity**: `POST|GET|PUT|DELETE /productivity`, `GET|POST|PUT|DELETE /productivity/tasks`, `GET|POST /productivity/sessions`
+- **Learning**: `POST|GET|PUT|DELETE /learning`, `GET|POST|PUT|DELETE /learning/courses`, `GET /learning/streak`
+- **Goals**: `GET|POST|PUT|DELETE /goals`
+- **Analytics**: `GET /analytics/correlations`, `GET /analytics/insights`, `GET /analytics/recommendations`, `GET /analytics/weekly-report`, `GET /analytics/productivity-dashboard`, trend/insight/weekday эндпоинты
+- **Export**: `GET /export?category=...`, `GET /export/health-report?start_date=&end_date=`
+- **Reminders**: `GET /reminders`
+- **Integrations**: `GET /integrations/providers`, `GET|POST|PUT|DELETE /integrations`, `GET /integrations/sources/{id}/status`, `POST /integrations/{provider}/sync`, `GET /integrations/google_fit/oauth-url`, `POST /integrations/google_fit/oauth-callback`, `POST /integrations/apple-health/import`
+- **Billing**: `GET /billing/plans`, `POST /billing/subscribe`, `GET /billing/subscription`
+- **LLM**: `POST /llm/chat`, `GET /llm/insight`
 
-Экспорт в Parquet:
+---
 
-```bash
-python dwh/etl/export_parquet.py
-```
+## Аутентификация и роли (RBAC)
 
-Сборка DuckDB:
+- Роли: `user`, `admin`. Все записи привязаны к пользователю.
+- Админ: эндпоинты `/admin/*`. Назначение администратора в БД: `UPDATE users SET role='admin' WHERE email='...';`
 
-```bash
-python dwh/duckdb/build_duckdb.py
-```
+---
 
-dbt (пример):
+## Production и CI/CD
 
-```bash
-DBT_PROFILES_DIR=dwh/dbt dbt run --project-dir dwh/dbt --vars '{"parquet_path":"dwh/parquet"}'
-```
+**Docker Compose (production):**
+- `docker compose -f docker-compose.prod.yml up --build`
+- С внешними БД: `docker compose -f docker-compose.managed.yml up --build`
 
-## Docker registry и CI/CD
+**Kubernetes:** манифесты в `deploy/k8s/` (namespace, configmap, secret, postgres, redis, migrate-job, backend, frontend, ingress). Для managed Postgres/Redis не применяйте postgres/redis, укажите URL в секрете.
 
-В репозитории настроен workflow `.github/workflows/docker-publish.yml`, который
-собирает и пушит образы в GHCR при пуше в `main` или при создании тега `v*`.
+**Helm:** `deploy/helm/personal-dashboard` — установка с `--set secrets.databaseUrl=...` и т.д.
 
-Пример имён образов:
-- `ghcr.io/<owner>/<repo>-backend`
-- `ghcr.io/<owner>/<repo>-frontend`
+**CI:** `.github/workflows/ci.yml` — миграции (`alembic upgrade head`), pytest (в т.ч. smoke), линт фронта. `.github/workflows/docker-publish.yml` — сборка и публикация образов в GHCR (`ghcr.io/<owner>/<repo>-backend`, `-frontend`).
 
-Используйте эти образы в Helm/к8s манифестах.
+---
 
 ## Инструменты разработки
 
@@ -314,29 +275,25 @@ ruff check .
 pytest
 ```
 
-## API (основное)
+Frontend: `cd frontend-react && npm run lint`.
 
-- `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
-- `GET /admin/users`, `PUT /admin/users/{id}/role`
-- `GET /integrations/providers`, `POST /integrations`, `POST /integrations/{provider}/sync`
-- `GET /billing/plans`, `POST /billing/subscribe`, `GET /billing/subscription`
-- `POST /health`, `GET /health`, `PUT /health/{id}`, `DELETE /health/{id}`
-- `POST /finance`, `GET /finance`, `PUT /finance/{id}`, `DELETE /finance/{id}`
-- `POST /productivity`, `GET /productivity`, `PUT /productivity/{id}`, `DELETE /productivity/{id}`
-- `POST /learning`, `GET /learning`, `PUT /learning/{id}`, `DELETE /learning/{id}`
-- `GET /analytics/correlations`
-- `GET /analytics/insights`
-- `GET /analytics/recommendations`
-- `GET /export?category=health|finance|productivity|learning|daily`
+---
 
-## Backlog / Planned
+## BigData витрины (DWH)
 
-- Forgot password flow (email reset link)
-- Подключение реальной оплаты (Stripe и т.п.) для тарифов
+```bash
+pip install -r requirements-dwh.txt
+python dwh/etl/export_parquet.py
+python dwh/duckdb/build_duckdb.py
+DBT_PROFILES_DIR=dwh/dbt dbt run --project-dir dwh/dbt --vars '{"parquet_path":"dwh/parquet"}'
+```
 
-## Перспективы развития
+---
 
-- Интеграции с Google Fit / Apple Health / Open Banking
-- Автоматизированная аналитика и ML‑рекомендации
-- Перенос DWH в BigQuery/Snowflake/ClickHouse
-- Мобильное приложение и подписки
+## Backlog / Планы
+
+- Подключение реальной оплаты (Stripe и т.п.) для тарифов.
+- PDF‑экспорт отчёта по здоровью (сейчас CSV).
+- Расширение интеграций и ML‑рекомендаций.
+
+История изменений — в [CHANGELOG.md](CHANGELOG.md).
