@@ -1,0 +1,63 @@
+# Полный стек одной командой: make up  или  docker compose -f docker-compose.full.yml up --build
+# Postgres + Redis + Backend (миграции при старте) + React frontend
+
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dashboard
+      POSTGRES_PASSWORD: dashboard
+      POSTGRES_DB: dashboard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dashboard -d dashboard"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://dashboard:dashboard@postgres:5432/dashboard
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=change-me
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:80
+      - CACHE_TTL_SECONDS=300
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend-react
+      args:
+        - VITE_API_URL=http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

@@ -1,15 +1,17 @@
 SHELL := /bin/bash
 
-.PHONY: help install migrate dwh-migrate run-backend run-frontend docker-up docker-down test lint format dwh-parquet duckdb-build dbt-run
+.PHONY: help install migrate dwh-migrate run-backend run-frontend up down docker-up docker-down test lint format dwh-parquet duckdb-build dbt-run
 
 help:
 	@echo "Targets:"
+	@echo "  up            Full stack: Postgres + Redis + Backend + React (one command)"
+	@echo "  down          Stop full stack (use after 'make up')"
 	@echo "  install       Install Python dependencies"
 	@echo "  migrate       Run app database migrations"
 	@echo "  dwh-migrate   Run DWH database migrations"
 	@echo "  run-backend   Start FastAPI backend"
 	@echo "  run-frontend  Start Streamlit frontend"
-	@echo "  docker-up     Start via Docker Compose"
+	@echo "  docker-up     Start via Docker Compose (backend + Streamlit + Redis)"
 	@echo "  docker-down   Stop Docker Compose"
 	@echo "  test          Run pytest"
 	@echo "  lint          Run ruff lint"
@@ -33,6 +35,12 @@ run-backend:
 
 run-frontend:
 	streamlit run frontend/app.py
+
+up:
+	docker compose -f docker-compose.full.yml up --build
+
+down:
+	docker compose -f docker-compose.full.yml down
 
 docker-up:
 	docker compose up --build

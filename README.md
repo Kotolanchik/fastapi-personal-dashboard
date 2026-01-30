@@ -103,6 +103,22 @@ Dockerfile.frontend-react # React production image
 Makefile                  # команды для быстрого запуска
 ```
 
+## Развёртывание одной командой
+
+Полный стек (Postgres + Redis + Backend + React) с автоматическими миграциями:
+
+```bash
+make up
+```
+
+Или без Makefile:
+
+```bash
+docker compose -f docker-compose.full.yml up --build
+```
+
+После запуска: **http://localhost:5173** — React, **http://localhost:8000** — API. Остановка: `make down` или `docker compose -f docker-compose.full.yml down`.
+
 ## Быстрый старт (локально)
 
 ```bash
@@ -129,15 +145,11 @@ npm run dev
 
 ## Быстрый старт (Docker)
 
-```bash
-docker compose up --build
-```
+**Рекомендуется (полный стек):** `make up` или `docker compose -f docker-compose.full.yml up --build` — Postgres, Redis, Backend, React.
 
-### React + Backend (Docker)
+Лёгкий вариант (без Postgres, Streamlit): `docker compose up --build`.
 
-```bash
-docker compose -f docker-compose.react.yml up --build
-```
+React + Backend без Postgres: `docker compose -f docker-compose.react.yml up --build`.
 
 ## Быстрый старт (Makefile)
 
