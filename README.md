@@ -123,6 +123,30 @@ Frontend: http://localhost:8501
 
 You can also set `API_URL` to point Streamlit at a remote backend.
 
+## One-command setup (Makefile)
+
+```bash
+make install
+make migrate
+make run-backend
+```
+
+In a second terminal:
+
+```bash
+make run-frontend
+```
+
+Docker option:
+
+```bash
+make docker-up
+```
+
+## Environment (.env)
+
+Copy `.env.example` to `.env` and update values as needed.
+
 ## Authentication
 
 Create an account and login via the Streamlit sidebar. All data is scoped to
