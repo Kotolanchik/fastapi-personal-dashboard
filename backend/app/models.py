@@ -181,7 +181,9 @@ class DataSource(Base):
     refresh_token = Column(String(512), nullable=True)
     token_expires_at = Column(DateTime(timezone=True), nullable=True)
     last_synced_at = Column(DateTime(timezone=True), nullable=True)
+    last_error = Column(String(512), nullable=True)
     metadata_json = Column("metadata", JSON, nullable=True)
+    sync_settings = Column(JSON, nullable=True)  # e.g. {"health": ["steps", "sleep"], "finance": []}
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)
 

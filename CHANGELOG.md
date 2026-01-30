@@ -91,10 +91,19 @@
 - **Миграции**
   - `0007_health_learning_productivity_extensions`: health (entry_type, steps, heart_rate_avg, workout_minutes), learning_courses + course_id/source_type в learning_entries, productivity_tasks + focus_category в productivity_entries, focus_sessions.
   - `0008_productivity_entry_completed_tasks`: таблица связи записей продуктивности с выполненными задачами (entry_id, task_id).
+  - `0009_integrations_last_error_sync_settings`: в data_sources добавлены last_error, sync_settings.
 
-- **Интеграции и биллинг (заготовки)**
-  - Интеграции: список провайдеров, подключение, синхронизация (Google Fit, Apple Health, Open Banking); модели источников и заданий синхронизации, хранение токенов; баннер «OAuth coming soon».
-  - Биллинг: модели планов и подписок, эндпоинты subscribe/subscription, страница Billing; пометка «Billing is in demo mode. No real charges.»; в README — что оплата пока не подключена.
+- **Интеграции (расширения)**
+  - Модели: в `data_sources` добавлены `last_error` (последняя ошибка синка), `sync_settings` (JSON: какие метрики подмешивать, напр. `{"health": ["steps", "sleep"], "finance": ["*"]}`).
+  - **Google Fit**: OAuth (GET `/integrations/google_fit/oauth-url` → редирект пользователя; POST `/integrations/google_fit/oauth-callback` с `code` → обмен на токены, создание/обновление DataSource). Вызов Fitness API (шаги за последние 30 дней), маппинг в `HealthEntry` (поле `steps`); при наличии `refresh_token` — обновление `access_token` перед запросом. Конфиг: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`.
+  - **Apple Health**: импорт по файлу (POST `/integrations/apple-health/import`): загрузка `export.xml` или ZIP с `export.xml`; парсинг Record (шаги, сон, пульс, вес), агрегация по дню, создание/обновление `HealthEntry`. Без OAuth (импорт вручную).
+  - **Open Banking**: заглушка заменена на mock: `fetch()` возвращает тестовые транзакции, категоризация (food, transport, health, income, other), агрегация по дню в `FinanceEntry`. Реальный API банка подключается через токены в DataSource.
+  - Синхронизация: при успехе обновляются `last_synced_at` и сбрасывается `last_error`; при ошибке — запись в `last_error` и в `SyncJob.message`. Ограничение частоты: `SYNC_MIN_INTERVAL_SECONDS` (по умолчанию 900), при более частом вызове POST `.../sync` возвращается последний job без нового запуска.
+  - API статуса: GET `/integrations/sources/{id}/status` — источник, последний job (статус, сообщение), `last_error`. На фронте: статус синка, последняя ошибка, кнопка «обновить сейчас» (POST `/{provider}/sync`). Опционально: выбор метрик в `sync_settings` (какие метрики из интеграции подмешивать в дашборд).
+  - Миграция: `0009_integrations_last_error_sync_settings` — колонки `last_error`, `sync_settings` в `data_sources`.
+
+- **Биллинг (заготовки)**
+  - Модели планов и подписок, эндпоинты subscribe/subscription, страница Billing; пометка «Billing is in demo mode. No real charges.»; в README — что оплата пока не подключена.
 
 - **Ревью продукта (лендинг и UX)**
   - Лендинг: hero на выгоды и ЦА; блок про бесплатный аккаунт и премиум «coming soon»; социальное доказательство.

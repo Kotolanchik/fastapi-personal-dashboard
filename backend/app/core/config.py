@@ -29,6 +29,12 @@ class Settings:
     llm_api_key: str | None
     llm_base_url: str | None
     llm_model: str
+    # Integrations: Google Fit OAuth
+    google_client_id: str | None
+    google_client_secret: str | None
+    google_redirect_uri: str | None
+    # Sync rate limit: min seconds between syncs per source
+    sync_min_interval_seconds: int
 
 
 @lru_cache
@@ -46,4 +52,8 @@ def get_settings() -> Settings:
         llm_api_key=os.getenv("LLM_API_KEY") or None,
         llm_base_url=os.getenv("LLM_BASE_URL") or None,
         llm_model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
+        google_client_id=os.getenv("GOOGLE_CLIENT_ID") or None,
+        google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET") or None,
+        google_redirect_uri=os.getenv("GOOGLE_REDIRECT_URI") or None,
+        sync_min_interval_seconds=int(os.getenv("SYNC_MIN_INTERVAL_SECONDS", "900")),  # 15 min
     )

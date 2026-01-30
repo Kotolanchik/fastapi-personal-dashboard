@@ -299,10 +299,16 @@ class InsightsResponse(BaseModel):
     insights: list[InsightItem]
 
 
+class OAuthCallbackBody(BaseModel):
+    code: str
+    state: Optional[str] = None
+
+
 class DataSourceBase(BaseModel):
     provider: str = Field(min_length=2, max_length=64)
     status: Optional[str] = Field(default="connected", max_length=32)
     metadata: Optional[dict] = Field(default=None, alias="metadata_json")
+    sync_settings: Optional[dict] = None  # e.g. {"health": ["steps", "sleep"], "finance": ["*"]}
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -319,13 +325,16 @@ class DataSourceUpdate(BaseModel):
     refresh_token: Optional[str] = None
     token_expires_at: Optional[datetime] = None
     metadata: Optional[dict] = Field(default=None, alias="metadata_json")
+    sync_settings: Optional[dict] = None
 
     model_config = ConfigDict(populate_by_name=True)
 
 
 class DataSourceRead(DataSourceBase):
     id: int
+    user_id: int
     last_synced_at: Optional[datetime] = None
+    last_error: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

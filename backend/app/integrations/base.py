@@ -17,5 +17,5 @@ class IntegrationProvider:
     def is_configured(self, source: DataSource) -> bool:
         return bool(source.access_token or source.refresh_token)
 
-    def fetch(self, source: DataSource) -> SyncResult:
+    def fetch(self, source: DataSource, db=None, settings=None) -> SyncResult:
         return SyncResult(status="skipped", message="Not implemented", stats={})
