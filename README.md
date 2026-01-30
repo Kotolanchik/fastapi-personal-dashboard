@@ -139,6 +139,12 @@ kubectl apply -f deploy/k8s/ingress.yaml
 - Все записи привязаны к пользователю
 - Админские эндпоинты: `/admin/*`
 
+Чтобы назначить администратора:
+
+```sql
+UPDATE users SET role='admin' WHERE email='admin@example.com';
+```
+
 ## Переменные окружения
 
 Скопируйте `.env.example` в `.env`, для продакшена используйте `.env.prod.example`.
