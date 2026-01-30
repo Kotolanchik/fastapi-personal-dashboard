@@ -35,6 +35,7 @@ import {
 } from '../../shared/api/entries'
 import { Link } from 'react-router-dom'
 import { getGoals, type GoalProgress } from '../../shared/api/goals'
+import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
 const toChart = (data: HealthEntry[]) =>
   data.map((entry) => ({
@@ -98,6 +99,7 @@ function daysSince(dateStr: string): number {
 }
 
 export const DashboardPage = () => {
+  usePageTitle('Dashboard')
   const toast = useToast()
   const [exporting, setExporting] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted())

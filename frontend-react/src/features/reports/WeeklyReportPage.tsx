@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { getWeeklyReport } from '../../shared/api/analytics'
+import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
 const formatDate = (s: string) => {
   try {
@@ -14,6 +15,7 @@ const formatDate = (s: string) => {
 }
 
 export const WeeklyReportPage = () => {
+  usePageTitle('Weekly report')
   const { data, isLoading, error } = useQuery({
     queryKey: ['weekly-report'],
     queryFn: getWeeklyReport,

@@ -8,8 +8,10 @@ import {
   listSyncJobs,
   syncProvider,
 } from '../../shared/api/integrations'
+import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
 export const IntegrationsPage = () => {
+  usePageTitle('Integrations')
   const queryClient = useQueryClient()
   const [provider, setProvider] = useState('')
   const [accessToken, setAccessToken] = useState('')

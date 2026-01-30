@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getSubscription, listPlans, subscribePlan } from '../../shared/api/billing'
 import { useToast } from '../../shared/components/Toast'
+import { usePageTitle } from '../../shared/hooks/usePageTitle'
 
 export const BillingPage = () => {
+  usePageTitle('Billing')
   const queryClient = useQueryClient()
   const toast = useToast()
   const plans = useQuery({ queryKey: ['plans'], queryFn: listPlans })

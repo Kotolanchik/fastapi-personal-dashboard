@@ -6,6 +6,7 @@ import { RequireAuth } from '../features/auth/RequireAuth'
 import { useAuth } from '../features/auth/AuthContext'
 import { BillingPage } from '../features/billing/BillingPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
+import { GoalsPage } from '../features/goals/GoalsPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { WeeklyReportPage } from '../features/reports/WeeklyReportPage'
 import { FinancePage } from '../features/entries/FinancePage'
@@ -39,6 +40,7 @@ export const App = () => (
         <Route element={<Layout />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="weekly-report" element={<WeeklyReportPage />} />
+          <Route path="goals" element={<GoalsPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="finance" element={<FinancePage />} />
           <Route path="productivity" element={<ProductivityPage />} />

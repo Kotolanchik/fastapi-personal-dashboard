@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { createEntry, deleteEntry, fetchEntries, updateEntry } from '../../shared/api/entries'
 import { useToast } from '../../shared/components/Toast'
+import { usePageTitle } from '../../shared/hooks/usePageTitle'
 import { parseValidationErrors } from '../../shared/utils/validation'
 
 type FieldConfig = {
@@ -22,6 +23,7 @@ type EntriesPageProps = {
 }
 
 export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
+  usePageTitle(title)
   const queryClient = useQueryClient()
   const toast = useToast()
   const { data = [], isLoading } = useQuery({

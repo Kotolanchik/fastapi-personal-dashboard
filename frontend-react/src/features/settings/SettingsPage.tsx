@@ -13,6 +13,7 @@ import {
   type Goal,
   type GoalProgress,
 } from '../../shared/api/goals'
+import { usePageTitle } from '../../shared/hooks/usePageTitle'
 import { getErrorMessage, parseValidationErrors } from '../../shared/utils/validation'
 
 const COMMON_TIMEZONES = [
@@ -27,6 +28,7 @@ const COMMON_TIMEZONES = [
 ]
 
 export const SettingsPage = () => {
+  usePageTitle('Settings')
   const { user, refreshUser } = useAuth()
   const toast = useToast()
   const [fullName, setFullName] = useState(user?.full_name ?? '')
