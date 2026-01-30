@@ -16,11 +16,12 @@ spec:
       containers:
         - name: frontend
           image: your-registry/personal-dashboard-frontend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8501
-          env:
-            - name: API_URL
-              value: http://backend:8000
+          envFrom:
+            - configMapRef:
+                name: app-config
 ---
 apiVersion: v1
 kind: Service

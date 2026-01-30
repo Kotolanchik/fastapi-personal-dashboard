@@ -16,15 +16,14 @@ spec:
       containers:
         - name: backend
           image: your-registry/personal-dashboard-backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
-          env:
-            - name: DATABASE_URL
-              value: postgresql+psycopg2://dashboard:dashboard@postgres:5432/dashboard
-            - name: SECRET_KEY
-              value: change-me
-            - name: CORS_ORIGINS
-              value: https://your-frontend-domain
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
 ---
 apiVersion: v1
 kind: Service

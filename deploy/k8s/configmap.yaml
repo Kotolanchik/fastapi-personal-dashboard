@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: personal-dashboard
+data:
+  CORS_ORIGINS: https://your-frontend-domain
+  API_URL: http://backend:8000
+  CACHE_TTL_SECONDS: "300"
