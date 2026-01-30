@@ -41,6 +41,18 @@ def get_goal(db: Session, goal_id: int, user_id: int) -> Optional[models.UserGoa
     ).first()
 
 
+def count_active_goals_by_sphere(db: Session, user_id: int, sphere: str) -> int:
+    return (
+        db.query(models.UserGoal)
+        .filter(
+            models.UserGoal.user_id == user_id,
+            models.UserGoal.sphere == sphere,
+            models.UserGoal.archived == False,  # noqa: E712
+        )
+        .count()
+    )
+
+
 def create_goal(db: Session, user_id: int, payload: schemas.GoalCreate) -> models.UserGoal:
     goal = models.UserGoal(
         user_id=user_id,
@@ -48,6 +60,7 @@ def create_goal(db: Session, user_id: int, payload: schemas.GoalCreate) -> model
         title=payload.title,
         target_value=payload.target_value,
         target_metric=payload.target_metric,
+        course_id=payload.course_id if hasattr(payload, "course_id") else None,
         deadline=payload.deadline,
         archived=False,
         created_at=datetime.now(timezone.utc),
@@ -63,7 +76,7 @@ def update_goal(
     goal: models.UserGoal,
     payload: schemas.GoalUpdate,
 ) -> models.UserGoal:
-    data = payload.dict(exclude_unset=True)
+    data = payload.model_dump(exclude_unset=True) if hasattr(payload, "model_dump") else payload.dict(exclude_unset=True)
     for key, value in data.items():
         setattr(goal, key, value)
     db.commit()
@@ -133,11 +146,48 @@ def compute_goal_progress(
     goal: models.UserGoal,
     period: str = "7d",
 ) -> schemas.GoalProgress:
+    course_id = getattr(goal, "course_id", None)
+    course_title = None
+    current = None
+    progress_pct = None
+
+    if goal.target_metric == "course_complete" and course_id:
+        course = (
+            db.query(models.LearningCourse)
+            .filter(
+                models.LearningCourse.id == course_id,
+                models.LearningCourse.user_id == user_id,
+            )
+            .first()
+        )
+        if course:
+            course_title = course.title
+            if getattr(course, "completed_at", None):
+                current = 1.0
+                progress_pct = 100.0
+            else:
+                current = 0.0
+                progress_pct = 0.0
+        start_date, end_date = _period_to_dates(period, goal)
+        return schemas.GoalProgress(
+            goal_id=goal.id,
+            title=goal.title,
+            sphere=goal.sphere,
+            target_value=goal.target_value,
+            target_metric=goal.target_metric,
+            course_id=course_id,
+            course_title=course_title,
+            current_value=current,
+            progress_pct=progress_pct,
+            deadline=goal.deadline,
+            period_start=start_date,
+            period_end=end_date,
+        )
+
     start_date, end_date = _period_to_dates(period, goal)
     current = _current_value_for_goal(
         db, user_id, goal.sphere, goal.target_metric, start_date, end_date
     )
-    progress_pct = None
     if goal.target_value is not None and current is not None and goal.target_value > 0:
         progress_pct = min(100.0, (current / goal.target_value) * 100.0)
     return schemas.GoalProgress(
@@ -146,6 +196,8 @@ def compute_goal_progress(
         sphere=goal.sphere,
         target_value=goal.target_value,
         target_metric=goal.target_metric,
+        course_id=course_id,
+        course_title=course_title,
         current_value=current,
         progress_pct=progress_pct,
         deadline=goal.deadline,

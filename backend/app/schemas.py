@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, conint, confloat
 
@@ -19,9 +19,11 @@ class TimestampRead(BaseModel):
 
 
 HEALTH_ENTRY_TYPES = ("day", "morning", "evening")
+HealthEntryType = Literal["day", "morning", "evening"]
+
 
 class HealthEntryBase(TimestampBase):
-    entry_type: str = Field(default="day", max_length=32)
+    entry_type: HealthEntryType = "day"
     sleep_hours: confloat(ge=0, le=24)
     energy_level: conint(ge=1, le=10)
     supplements: Optional[str] = None
@@ -40,7 +42,7 @@ class HealthEntryCreate(HealthEntryBase):
 class HealthEntryUpdate(BaseModel):
     recorded_at: Optional[datetime] = None
     timezone: Optional[str] = None
-    entry_type: Optional[str] = Field(default=None, max_length=32)
+    entry_type: Optional[HealthEntryType] = None
     sleep_hours: Optional[confloat(ge=0, le=24)] = None
     energy_level: Optional[conint(ge=1, le=10)] = None
     supplements: Optional[str] = None
@@ -86,6 +88,10 @@ class FinanceEntryRead(TimestampRead, FinanceEntryBase):
 
 PRODUCTIVITY_TASK_STATUSES = ("open", "done", "cancelled")
 FOCUS_CATEGORIES = ("code", "writing", "meetings", "other")
+FocusCategoryType = Literal["code", "writing", "meetings", "other"]
+SESSION_TYPES = ("pomodoro", "deep_work")
+SessionType = Literal["pomodoro", "deep_work"]
+
 
 class ProductivityTaskBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=512)
@@ -116,7 +122,7 @@ class FocusSessionBase(BaseModel):
     recorded_at: Optional[datetime] = None
     timezone: Optional[str] = Field(default="UTC", max_length=64)
     duration_minutes: conint(ge=1, le=480)
-    session_type: Optional[str] = Field(default=None, max_length=32)  # pomodoro, deep_work
+    session_type: Optional[SessionType] = None
     notes: Optional[str] = None
 
 
@@ -130,7 +136,7 @@ class FocusSessionRead(BaseModel):
     recorded_at: datetime
     local_date: date
     duration_minutes: int
-    session_type: Optional[str] = None
+    session_type: Optional[SessionType] = None
     notes: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -140,7 +146,7 @@ class ProductivityEntryBase(TimestampBase):
     deep_work_hours: confloat(ge=0, le=24)
     tasks_completed: conint(ge=0)
     focus_level: conint(ge=1, le=10)
-    focus_category: Optional[str] = Field(default=None, max_length=64)
+    focus_category: Optional[FocusCategoryType] = None
     notes: Optional[str] = None
 
 
@@ -154,7 +160,7 @@ class ProductivityEntryUpdate(BaseModel):
     deep_work_hours: Optional[confloat(ge=0, le=24)] = None
     tasks_completed: Optional[conint(ge=0)] = None
     focus_level: Optional[conint(ge=1, le=10)] = None
-    focus_category: Optional[str] = Field(default=None, max_length=64)
+    focus_category: Optional[FocusCategoryType] = None
     notes: Optional[str] = None
     completed_task_ids: Optional[List[int]] = None
 
@@ -181,6 +187,8 @@ class ProductivityDashboardResponse(BaseModel):
 
 
 LEARNING_SOURCE_TYPES = ("book", "course", "podcast", "other")
+LearningSourceType = Literal["book", "course", "podcast", "other"]
+
 
 class LearningCourseBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
@@ -194,12 +202,14 @@ class LearningCourseCreate(LearningCourseBase):
 class LearningCourseUpdate(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=255)
     kind: Optional[str] = Field(default=None, max_length=32)
+    completed_at: Optional[datetime] = None
 
 
 class LearningCourseRead(LearningCourseBase):
     id: int
     user_id: int
     created_at: datetime
+    completed_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -210,7 +220,7 @@ class LearningEntryBase(TimestampBase):
     projects: Optional[str] = None
     notes: Optional[str] = None
     course_id: Optional[int] = None
-    source_type: Optional[str] = Field(default=None, max_length=32)
+    source_type: Optional[LearningSourceType] = None
 
 
 class LearningEntryCreate(LearningEntryBase):
@@ -225,7 +235,7 @@ class LearningEntryUpdate(BaseModel):
     projects: Optional[str] = None
     notes: Optional[str] = None
     course_id: Optional[int] = None
-    source_type: Optional[str] = Field(default=None, max_length=32)
+    source_type: Optional[LearningSourceType] = None
 
 
 class LearningEntryRead(TimestampRead, LearningEntryBase):
@@ -251,6 +261,9 @@ class UserRead(UserBase):
     default_timezone: Optional[str] = "UTC"
     created_at: datetime
     role: str
+    dashboard_settings: Optional[dict] = None
+    notification_email: Optional[str] = None
+    notification_preferences: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -258,10 +271,22 @@ class UserRead(UserBase):
 class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, max_length=255)
     default_timezone: Optional[str] = Field(default=None, max_length=64)
+    dashboard_settings: Optional[dict] = None
+    notification_email: Optional[str] = Field(default=None, max_length=255)
+    notification_preferences: Optional[dict] = None
 
 
 class ChangePassword(BaseModel):
     current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=1, max_length=255)
     new_password: str = Field(min_length=8, max_length=128)
 
 
@@ -401,6 +426,7 @@ class RecommendationsResponse(BaseModel):
 GOAL_SPHERES = ("health", "finance", "productivity", "learning")
 GOAL_PROGRESS_PERIODS = ("7d", "month", "deadline")
 GOAL_MAX_ACTIVE = 5
+GOAL_MAX_PER_SPHERE = 2  # max active goals per sphere (e.g. health, learning)
 
 
 class GoalBase(BaseModel):
@@ -408,6 +434,7 @@ class GoalBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     target_value: Optional[float] = None
     target_metric: Optional[str] = Field(default=None, max_length=64)
+    course_id: Optional[int] = None
     deadline: Optional[date] = None
 
 
@@ -420,6 +447,7 @@ class GoalUpdate(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=255)
     target_value: Optional[float] = None
     target_metric: Optional[str] = Field(default=None, max_length=64)
+    course_id: Optional[int] = None
     deadline: Optional[date] = None
     archived: Optional[bool] = None
 
@@ -439,11 +467,36 @@ class GoalProgress(BaseModel):
     sphere: str
     target_value: Optional[float] = None
     target_metric: Optional[str] = None
+    course_id: Optional[int] = None
+    course_title: Optional[str] = None
     current_value: Optional[float] = None
     progress_pct: Optional[float] = None
     deadline: Optional[date] = None
     period_start: Optional[date] = None
     period_end: Optional[date] = None
+
+
+FINANCE_TARGET_FIELDS = ("income", "expense_food", "expense_transport", "expense_health", "expense_other")
+
+
+class ExpenseCategoryMappingBase(BaseModel):
+    provider_category: str = Field(..., min_length=1, max_length=128)
+    target_field: str = Field(..., max_length=64)
+
+
+class ExpenseCategoryMappingCreate(ExpenseCategoryMappingBase):
+    pass
+
+
+class ExpenseCategoryMappingUpdate(BaseModel):
+    target_field: Optional[str] = Field(default=None, max_length=64)
+
+
+class ExpenseCategoryMappingRead(ExpenseCategoryMappingBase):
+    id: int
+    user_id: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GoalsProgressResponse(BaseModel):

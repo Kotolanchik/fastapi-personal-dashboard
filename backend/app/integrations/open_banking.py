@@ -39,8 +39,12 @@ def _fetch_mock_transactions(days: int = 30) -> list[dict]:
 
 def _aggregate_to_finance(
     transactions: list[dict],
+    category_map: Optional[dict[str, str]] = None,
 ) -> dict[date, dict[str, float]]:
-    """Aggregate transactions by date into income/expense_food/transport/health/other."""
+    """Aggregate transactions by date into income/expense_food/transport/health/other.
+    category_map: optional user mapping provider_category -> target_field (overrides default CATEGORY_MAP).
+    """
+    m = category_map if category_map else CATEGORY_MAP
     by_date: dict[date, dict[str, float]] = {}
     for tx in transactions:
         try:
@@ -49,7 +53,7 @@ def _aggregate_to_finance(
             continue
         amount = float(tx.get("amount", 0))
         cat = (tx.get("category") or "other").lower()
-        field = CATEGORY_MAP.get(cat, "expense_other")
+        field = m.get(cat, "expense_other")
         if local_date not in by_date:
             by_date[local_date] = {
                 "income": 0.0,
@@ -86,14 +90,24 @@ class OpenBankingProvider(IntegrationProvider):
     def fetch(self, source: DataSource, db=None, settings=None) -> SyncResult:
         from sqlalchemy.orm import Session
 
+        from ..models import UserExpenseCategoryMapping
+
         if not db:
             return SyncResult(status="failed", message="No database session", stats={})
         session: Session = db
+        category_map = None
+        mappings = (
+            session.query(UserExpenseCategoryMapping)
+            .filter(UserExpenseCategoryMapping.user_id == source.user_id)
+            .all()
+        )
+        if mappings:
+            category_map = {m.provider_category: m.target_field for m in mappings}
         # In production: use source.access_token to call bank API and get transactions
         transactions = _fetch_mock_transactions(30)
         if not transactions:
             return SyncResult(status="success", message="No transactions", stats={"imported_records": 0})
-        by_date = _aggregate_to_finance(transactions)
+        by_date = _aggregate_to_finance(transactions, category_map=category_map)
         tz_name = "UTC"
         imported = 0
         for local_date, amounts in by_date.items():

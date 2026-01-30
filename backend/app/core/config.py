@@ -33,8 +33,21 @@ class Settings:
     google_client_id: str | None
     google_client_secret: str | None
     google_redirect_uri: str | None
+    google_oauth_auth_url: str
+    google_oauth_token_url: str
+    fitness_aggregate_url: str
+    # Import: max file size (bytes) for Apple Health / uploads
+    max_import_file_size_bytes: int
     # Sync rate limit: min seconds between syncs per source
     sync_min_interval_seconds: int
+    # Global API rate limit per IP (e.g. "200/minute" for slowapi default_limits)
+    rate_limit_default: str
+    # Notifications: email reminders (optional)
+    smtp_host: str | None
+    smtp_port: int
+    smtp_user: str | None
+    smtp_password: str | None
+    smtp_from_email: str | None
 
 
 @lru_cache
@@ -55,5 +68,18 @@ def get_settings() -> Settings:
         google_client_id=os.getenv("GOOGLE_CLIENT_ID") or None,
         google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET") or None,
         google_redirect_uri=os.getenv("GOOGLE_REDIRECT_URI") or None,
+        google_oauth_auth_url=os.getenv("GOOGLE_OAUTH_AUTH_URL", "https://accounts.google.com/o/oauth2/v2/auth"),
+        google_oauth_token_url=os.getenv("GOOGLE_OAUTH_TOKEN_URL", "https://oauth2.googleapis.com/token"),
+        fitness_aggregate_url=os.getenv(
+            "FITNESS_AGGREGATE_URL",
+            "https://fitness.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+        ),
+        max_import_file_size_bytes=int(os.getenv("MAX_IMPORT_FILE_SIZE_MB", "100")) * 1024 * 1024,
         sync_min_interval_seconds=int(os.getenv("SYNC_MIN_INTERVAL_SECONDS", "900")),  # 15 min
+        rate_limit_default=os.getenv("RATE_LIMIT_DEFAULT", "200/minute"),
+        smtp_host=os.getenv("SMTP_HOST") or None,
+        smtp_port=int(os.getenv("SMTP_PORT", "587")),
+        smtp_user=os.getenv("SMTP_USER") or None,
+        smtp_password=os.getenv("SMTP_PASSWORD") or None,
+        smtp_from_email=os.getenv("SMTP_FROM_EMAIL") or None,
     )

@@ -8,10 +8,10 @@ export type GoalProgressPeriod = (typeof GOAL_PROGRESS_PERIODS)[number]
 
 /** Metrics available per sphere for target_metric */
 export const GOAL_METRICS_BY_SPHERE: Record<string, string[]> = {
-  health: ['sleep_hours', 'energy_level', 'wellbeing'],
+  health: ['sleep_hours', 'energy_level', 'wellbeing', 'steps', 'workout_minutes'],
   finance: ['income', 'expense_total'],
   productivity: ['deep_work_hours', 'tasks_completed', 'focus_level'],
-  learning: ['study_hours'],
+  learning: ['study_hours', 'course_complete'],
 }
 
 export type Goal = {
@@ -32,6 +32,8 @@ export type GoalProgress = {
   sphere: string
   target_value?: number | null
   target_metric?: string | null
+  course_id?: number | null
+  course_title?: string | null
   current_value?: number | null
   progress_pct?: number | null
   deadline?: string | null
@@ -54,6 +56,7 @@ export const createGoal = (payload: {
   title: string
   target_value?: number | null
   target_metric?: string | null
+  course_id?: number | null
   deadline?: string | null
 }) => api.post<Goal>('/goals', payload).then((res) => res.data)
 
@@ -64,6 +67,7 @@ export const updateGoal = (
     title: string
     target_value: number | null
     target_metric: string | null
+    course_id: number | null
     deadline: string | null
     archived: boolean
   }>,

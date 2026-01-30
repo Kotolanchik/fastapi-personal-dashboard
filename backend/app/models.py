@@ -31,6 +31,11 @@ class User(Base):
     default_timezone = Column(String(64), nullable=True, server_default="UTC")
     created_at = Column(DateTime(timezone=True), nullable=False)
     role = Column(String(32), nullable=False, default="user")
+    password_reset_token = Column(String(255), nullable=True, index=True)
+    password_reset_expires = Column(DateTime(timezone=True), nullable=True)
+    dashboard_settings = Column(JSON, nullable=True)  # e.g. {"enabled_blocks": ["goals", "trends"], "order": [...]}
+    notification_email = Column(String(255), nullable=True)
+    notification_preferences = Column(JSON, nullable=True)  # e.g. {"email_reminders": true}
 
     health_entries = relationship("HealthEntry", back_populates="user")
     finance_entries = relationship("FinanceEntry", back_populates="user")
@@ -42,6 +47,11 @@ class User(Base):
     data_sources = relationship("DataSource", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
     goals = relationship("UserGoal", back_populates="user", cascade="all, delete-orphan")
+    expense_category_mappings = relationship(
+        "UserExpenseCategoryMapping",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class HealthEntry(Base, TimestampMixin):
@@ -150,6 +160,7 @@ class LearningCourse(Base):
     title = Column(String(255), nullable=False)
     kind = Column(String(32), nullable=True)  # course, book, topic
     created_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)  # manual "course finished" for goals
 
     user = relationship("User", back_populates="learning_courses")
     entries = relationship("LearningEntry", back_populates="course")
@@ -188,6 +199,7 @@ class DataSource(Base):
     updated_at = Column(DateTime(timezone=True), nullable=False)
 
     user = relationship("User", back_populates="data_sources")
+    sync_jobs = relationship("SyncJob", back_populates="data_source", cascade="all, delete-orphan")
 
 
 class SyncJob(Base):
@@ -196,12 +208,15 @@ class SyncJob(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     provider = Column(String(64), nullable=False, index=True)
+    data_source_id = Column(Integer, ForeignKey("data_sources.id", ondelete="SET NULL"), nullable=True, index=True)
     status = Column(String(32), nullable=False, default="queued")
     started_at = Column(DateTime(timezone=True), nullable=True)
     finished_at = Column(DateTime(timezone=True), nullable=True)
     message = Column(String(512), nullable=True)
     stats = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
+
+    data_source = relationship("DataSource", back_populates="sync_jobs")
 
 
 class UserGoal(Base):
@@ -213,11 +228,25 @@ class UserGoal(Base):
     title = Column(String(255), nullable=False)
     target_value = Column(Float, nullable=True)
     target_metric = Column(String(64), nullable=True)
+    course_id = Column(Integer, ForeignKey("learning_courses.id", ondelete="SET NULL"), nullable=True, index=True)
     deadline = Column(Date, nullable=True)
     archived = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False)
 
     user = relationship("User", back_populates="goals")
+    course = relationship("LearningCourse", backref="goals")
+
+
+class UserExpenseCategoryMapping(Base):
+    """Map provider (e.g. Open Banking) category to our finance field."""
+    __tablename__ = "user_expense_category_mappings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider_category = Column(String(128), nullable=False)
+    target_field = Column(String(64), nullable=False)  # income, expense_food, expense_transport, expense_health, expense_other
+
+    user = relationship("User", back_populates="expense_category_mappings")
 
 
 class Plan(Base):

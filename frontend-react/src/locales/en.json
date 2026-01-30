@@ -100,7 +100,33 @@
     "noInsights": "No insights yet.",
     "noRecommendations": "No recommendations yet.",
     "csvDownloaded": "CSV downloaded.",
-    "downloadFailed": "Download failed."
+    "downloadFailed": "Download failed.",
+    "productivityDashboard": "Productivity insights",
+    "productivityDashboardSubtitle": "Best/worst weekdays, trends, focus sessions, and insight.",
+    "sessionDeepWorkTotal": "Total focus session hours",
+    "topHoursForFocus": "Top hours for focus",
+    "focusByCategory": "Focus by category",
+    "customizeWidgets": "Customize dashboard",
+    "hideWidgetSettings": "Hide settings",
+    "widgetSaved": "Dashboard layout saved.",
+    "widgetSaveFailed": "Failed to save layout.",
+    "widgets": {
+      "reminderBanner": "Reminder banner",
+      "goals": "Goals",
+      "export": "Export",
+      "lastWeek": "Last week",
+      "trendThisMonth": "Trend this month",
+      "weekdayTrends": "Weekday trends",
+      "productivityDashboard": "Productivity insights",
+      "summaryCards": "Summary cards",
+      "healthChart": "Health chart",
+      "financeChart": "Finance chart",
+      "productivityChart": "Productivity chart",
+      "learningChart": "Learning chart",
+      "correlations": "Correlations",
+      "insights": "Insights",
+      "recommendations": "Recommendations"
+    }
   },
   "onboarding": {
     "welcome": "Welcome to LifePulse",
@@ -141,7 +167,8 @@
     "updated": "Goal updated.",
     "failedToArchive": "Failed to archive goal.",
     "failedToUnarchive": "Failed to restore goal.",
-    "maxActiveReached": "Maximum {{max}} active goals. Archive one to add more."
+    "maxActiveReached": "Maximum {{max}} active goals. Archive one to add more.",
+    "course": "Course"
   },
   "settings": {
     "title": "Settings",
@@ -167,7 +194,10 @@
     "goalRemoved": "Goal removed.",
     "failedToRemoveGoal": "Failed to remove goal.",
     "passwordChanged": "Password changed.",
-    "deleteGoal": "Delete goal {{title}}"
+    "deleteGoal": "Delete goal {{title}}",
+    "notificationEmail": "Email for reminders",
+    "notificationEmailHint": "Optional. Used for reminder emails (e.g. fill health for yesterday).",
+    "emailReminders": "Send reminder emails"
   },
   "assistant": {
     "title": "AI Assistant",
@@ -183,16 +213,28 @@
     "errorNotConfigured": "Could not get reply. Check LLM settings (LLM_API_KEY or LLM_BASE_URL).",
     "errorUnavailable": "LLM is not configured or unavailable."
   },
+  "finance": {
+    "expenseCategoryMappings": "Expense category mappings",
+    "expenseCategoryMappingsHint": "Map Open Banking (or other) transaction categories to your finance fields. Used when syncing from integrations.",
+    "providerCategory": "Provider category",
+    "targetField": "Map to",
+    "categoryMappingAdded": "Mapping added.",
+    "categoryMappingFailed": "Failed to add mapping."
+  },
   "entries": {
     "added": "Added.",
     "saved": "Saved.",
     "labels": {
       "health": {
+        "entry_type": "Entry type",
         "sleep_hours": "Sleep (hours)",
         "energy_level": "Energy (1–10)",
         "supplements": "Supplements",
         "weight_kg": "Weight (kg)",
         "wellbeing": "Wellbeing (1–10)",
+        "steps": "Steps",
+        "heart_rate_avg": "Heart rate avg",
+        "workout_minutes": "Workout (min)",
         "notes": "Notes"
       },
       "finance": {
@@ -208,13 +250,17 @@
         "deep_work_hours": "Deep work (hours)",
         "tasks_completed": "Tasks completed",
         "focus_level": "Focus (1–10)",
+        "focus_category": "Focus category",
         "notes": "Notes"
       },
       "learning": {
         "study_hours": "Study (hours)",
+        "course_complete": "Finish course",
         "topic": "Topic",
         "topics": "Topics",
         "projects": "Projects",
+        "course": "Course",
+        "source_type": "Source type",
         "notes": "Notes"
       }
     },
@@ -232,6 +278,30 @@
     "noEntriesYet": "No entries yet.",
     "addFirstHint": "Add your first entry to start tracking.",
     "addFirstEntry": "Add your first entry"
+  },
+  "productivity": {
+    "tasks": "Tasks",
+    "tasksHint": "Track tasks with deadlines; mark done when completed.",
+    "taskTitle": "Task title",
+    "taskTitlePlaceholder": "e.g. Review PR",
+    "dueAt": "Due date",
+    "taskAdded": "Task added.",
+    "markDone": "Mark done",
+    "noTasksYet": "No tasks yet.",
+    "focusSessions": "Focus sessions (Pomodoro)",
+    "focusSessionsHint": "Log focus sessions; they count toward deep work hours.",
+    "durationMinutes": "Duration (min)",
+    "sessionType": "Type",
+    "addSession": "Add session",
+    "sessionAdded": "Session added.",
+    "localDate": "Date",
+    "noSessionsYet": "No sessions yet.",
+    "completedTasks": "Completed tasks (link to list above)",
+    "pomodoroTimer": "Pomodoro timer",
+    "pomodoroTimerHint": "Set duration below, start, then finish session to log.",
+    "startTimer": "Start",
+    "pauseTimer": "Pause",
+    "finishSession": "Finish session"
   },
   "reports": {
     "lastWeekNumbers": "Last week in numbers",
@@ -283,19 +353,74 @@
     "termsDisclaimer": "The service is provided \"as is\". We do not guarantee uninterrupted availability or that the analytics are suitable for any particular purpose."
   },
   "integrations": {
-    "banner": "OAuth for Google Fit / Apple Health coming soon. For now you can connect sources using tokens below.",
+    "banner": "Connect Google Fit (OAuth) or upload Apple Health export. You can also connect sources using tokens below.",
     "connectIntegration": "Connect integration",
+    "connectGoogleFit": "Google Fit (OAuth)",
+    "connectGoogleFitHint": "Redirects to Google to authorize; after approval you return here.",
+    "connectWithGoogleFit": "Connect with Google Fit",
+    "uploadAppleHealth": "Apple Health import",
+    "uploadAppleHealthHint": "Upload export.xml or a ZIP containing export.xml from the Health app.",
+    "selectFile": "Select file",
+    "upload": "Upload",
     "provider": "Provider",
     "accessToken": "Access token",
     "refreshToken": "Refresh token",
     "dataSources": "Data sources",
     "lastSynced": "Last synced",
+    "lastError": "Last error",
     "action": "Action",
     "sync": "Sync",
+    "updateNow": "Update now",
+    "syncSettings": "Sync settings",
+    "syncSettingsJson": "Metrics to sync (JSON, e.g. {\"health\": [\"steps\", \"sleep\"], \"finance\": [\"*\"]})",
+    "syncSettingsSaved": "Sync settings saved.",
+    "syncSettingsError": "Failed to save sync settings.",
+    "syncSettingsInvalidJson": "Invalid JSON.",
+    "syncStarted": "Sync started.",
+    "syncError": "Sync failed.",
+    "googleFitNotConfigured": "Google OAuth is not configured.",
+    "importSuccess": "Imported {{count}} records.",
+    "importError": "Import failed.",
     "noSources": "No connected sources.",
     "syncHistory": "Sync history",
     "message": "Message",
     "finished": "Finished",
-    "noSyncHistory": "No sync history."
+    "noSyncHistory": "No sync history.",
+    "oauthCallbackConnecting": "Connecting…",
+    "oauthCallbackSuccess": "Google Fit connected.",
+    "oauthCallbackError": "Failed to connect Google Fit.",
+    "oauthCallbackMissingCode": "Missing authorization code."
+  },
+  "learning": {
+    "courses": "Courses",
+    "myCourses": "My courses",
+    "myCoursesHint": "Add courses or topics to link to learning entries.",
+    "courseTitle": "Title",
+    "courseTitlePlaceholder": "e.g. React basics",
+    "kind": "Kind",
+    "courseAdded": "Course added.",
+    "courseUpdated": "Course updated.",
+    "noCoursesYet": "No courses yet.",
+    "status": "Status",
+    "completed": "Completed",
+    "markComplete": "Mark complete",
+    "markIncomplete": "Mark incomplete",
+    "streak": "Streak",
+    "streakDays": "{{count}} days",
+    "lastActivity": "Last activity",
+    "byDate": "Learning by date",
+    "byDateHint": "Study hours and entries per day (last 14 days).",
+    "entriesCount": "Entries"
+  },
+  "reminders": {
+    "title": "Reminders",
+    "fillHealthYesterday": "Fill health for yesterday.",
+    "fillHealth": "Fill"
+  },
+  "export": {
+    "healthReport": "Health report (for doctor)",
+    "healthReportHint": "Download CSV for a date range.",
+    "startDate": "Start date",
+    "endDate": "End date"
   }
 }

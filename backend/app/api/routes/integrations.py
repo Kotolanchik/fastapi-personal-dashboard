@@ -1,15 +1,16 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from ... import models, schemas
 from ...core.config import get_settings
+from ...database import SessionLocal
 from ...integrations.apple_health import import_apple_health_xml
 from ...integrations.google_fit import exchange_code, get_oauth_url
 from ...integrations.registry import list_providers
-from ...integrations.sync import run_sync
+from ...integrations.sync import create_sync_job, run_sync
 from ..deps import get_current_user, get_db_session
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
@@ -49,7 +50,11 @@ def get_source_status(
         raise HTTPException(status_code=404, detail="Data source not found")
     last_job = (
         db.query(models.SyncJob)
-        .filter(models.SyncJob.user_id == user.id, models.SyncJob.provider == source.provider)
+        .filter(
+            models.SyncJob.user_id == user.id,
+            models.SyncJob.provider == source.provider,
+            models.SyncJob.data_source_id == source.id,
+        )
         .order_by(models.SyncJob.created_at.desc())
         .limit(1)
         .first()
@@ -250,11 +255,28 @@ def apple_health_import(
     return {"status": result.status, "message": result.message, "stats": result.stats}
 
 
-# --- Sync (rate limit; optional: run in background via BackgroundTasks) ---
+# --- Sync (rate limit; run in background via BackgroundTasks) ---
+
+
+def _execute_sync_background(source_id: int, job_id: int) -> None:
+    """Run sync in background with a new DB session."""
+    db = SessionLocal()
+    try:
+        source = db.query(models.DataSource).filter(models.DataSource.id == source_id).first()
+        if not source:
+            return
+        job = db.query(models.SyncJob).filter(models.SyncJob.id == job_id).first()
+        if not job:
+            return
+        run_sync(db, source, job=job)
+    finally:
+        db.close()
+
 
 @router.post("/{provider}/sync", response_model=schemas.SyncJobRead)
 def sync_provider(
     provider: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db_session),
     user=Depends(get_current_user),
 ):
@@ -268,18 +290,22 @@ def sync_provider(
     settings = get_settings()
     # Rate limit: min interval between syncs per source
     if source.last_synced_at and settings.sync_min_interval_seconds:
-        from datetime import timedelta
         if (datetime.now(timezone.utc) - source.last_synced_at).total_seconds() < settings.sync_min_interval_seconds:
             last_job = (
                 db.query(models.SyncJob)
-                .filter(models.SyncJob.user_id == user.id, models.SyncJob.provider == provider)
+                .filter(
+                    models.SyncJob.user_id == user.id,
+                    models.SyncJob.provider == provider,
+                    models.SyncJob.data_source_id == source.id,
+                )
                 .order_by(models.SyncJob.created_at.desc())
                 .limit(1)
                 .first()
             )
             if last_job:
                 return last_job
-    job = run_sync(db, source)
+    job = create_sync_job(db, user.id, provider, data_source_id=source.id)
+    background_tasks.add_task(_execute_sync_background, source.id, job.id)
     return job
 
 

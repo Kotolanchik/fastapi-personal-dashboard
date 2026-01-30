@@ -86,44 +86,16 @@ def _settings_include(source: Optional[DataSource], metric: str) -> bool:
     return isinstance(health, list) and metric in health
 
 
-class AppleHealthProvider(IntegrationProvider):
-    provider = "apple_health"
-
-    def is_configured(self, source: DataSource) -> bool:
-        return True  # No OAuth; import is file-based
-
-    def fetch(self, source: DataSource, db=None, settings=None) -> SyncResult:
-        return SyncResult(
-            status="skipped",
-            message="Use POST /integrations/apple-health/import with export.xml file.",
-            stats={"imported_records": 0},
-        )
-
-
-def import_apple_health_xml(
+def map_apple_health_to_health_entries(
     db,
     user_id: int,
-    content: bytes,
+    steps_by_date: dict,
+    sleep_hours_by_date: dict,
+    heart_rate_by_date: dict,
+    weight_by_date: dict,
     source: Optional[DataSource] = None,
-    is_zip: bool = False,
-) -> SyncResult:
-    """Parse Apple Health export (XML or ZIP with export.xml) and upsert HealthEntry."""
-    if is_zip:
-        with zipfile.ZipFile(BytesIO(content), "r") as z:
-            names = z.namelist()
-            if "export.xml" in names:
-                content = z.read("export.xml")
-            else:
-                for n in names:
-                    if n.endswith(".xml"):
-                        content = z.read(n)
-                        break
-                else:
-                    return SyncResult(status="failed", message="No export.xml in ZIP", stats={})
-    try:
-        steps_by_date, sleep_hours_by_date, heart_rate_by_date, weight_by_date = _parse_apple_health_xml(content)
-    except ET.ParseError as e:
-        return SyncResult(status="failed", message=f"Invalid XML: {e}", stats={})
+) -> int:
+    """Map parsed Apple Health data (by-date dicts) to HealthEntry: upsert per date. Returns count of records updated/created."""
     tz_name = "UTC"
     imported = 0
     all_dates = set(steps_by_date) | set(sleep_hours_by_date) | set(heart_rate_by_date) | set(weight_by_date)
@@ -167,6 +139,53 @@ def import_apple_health_xml(
             db.add(entry)
             imported += 1
     db.commit()
+    return imported
+
+
+class AppleHealthProvider(IntegrationProvider):
+    provider = "apple_health"
+
+    def is_configured(self, source: DataSource) -> bool:
+        return True  # No OAuth; import is file-based
+
+    def fetch(self, source: DataSource, db=None, settings=None) -> SyncResult:
+        return SyncResult(
+            status="skipped",
+            message="Use POST /integrations/apple-health/import with export.xml file.",
+            stats={"imported_records": 0},
+        )
+
+
+def import_apple_health_xml(
+    db,
+    user_id: int,
+    content: bytes,
+    source: Optional[DataSource] = None,
+    is_zip: bool = False,
+) -> SyncResult:
+    """Parse Apple Health export (XML or ZIP with export.xml) and upsert HealthEntry."""
+    if is_zip:
+        with zipfile.ZipFile(BytesIO(content), "r") as z:
+            names = z.namelist()
+            if "export.xml" in names:
+                content = z.read("export.xml")
+            else:
+                for n in names:
+                    if n.endswith(".xml"):
+                        content = z.read(n)
+                        break
+                else:
+                    return SyncResult(status="failed", message="No export.xml in ZIP", stats={})
+    try:
+        steps_by_date, sleep_hours_by_date, heart_rate_by_date, weight_by_date = _parse_apple_health_xml(content)
+    except ET.ParseError as e:
+        return SyncResult(status="failed", message=f"Invalid XML: {e}", stats={})
+    imported = map_apple_health_to_health_entries(
+        db, user_id,
+        steps_by_date, sleep_hours_by_date, heart_rate_by_date, weight_by_date,
+        source=source,
+    )
+    all_dates = set(steps_by_date) | set(sleep_hours_by_date) | set(heart_rate_by_date) | set(weight_by_date)
     return SyncResult(
         status="success",
         message="OK",

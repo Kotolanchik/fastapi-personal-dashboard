@@ -100,7 +100,33 @@
     "noInsights": "Пока нет инсайтов.",
     "noRecommendations": "Пока нет рекомендаций.",
     "csvDownloaded": "CSV скачан.",
-    "downloadFailed": "Ошибка загрузки."
+    "downloadFailed": "Ошибка загрузки.",
+    "productivityDashboard": "Продуктивность",
+    "productivityDashboardSubtitle": "Лучшие/худшие дни недели, тренды, сессии фокуса и инсайт.",
+    "sessionDeepWorkTotal": "Всего часов сессий фокуса",
+    "topHoursForFocus": "Лучшие часы для фокуса",
+    "focusByCategory": "Фокус по категориям",
+    "customizeWidgets": "Настроить дашборд",
+    "hideWidgetSettings": "Скрыть настройки",
+    "widgetSaved": "Раскладка дашборда сохранена.",
+    "widgetSaveFailed": "Не удалось сохранить раскладку.",
+    "widgets": {
+      "reminderBanner": "Баннер напоминаний",
+      "goals": "Цели",
+      "export": "Экспорт",
+      "lastWeek": "Неделя",
+      "trendThisMonth": "Тренд за месяц",
+      "weekdayTrends": "По дням недели",
+      "productivityDashboard": "Продуктивность",
+      "summaryCards": "Сводные карточки",
+      "healthChart": "График здоровья",
+      "financeChart": "График финансов",
+      "productivityChart": "График продуктивности",
+      "learningChart": "График обучения",
+      "correlations": "Корреляции",
+      "insights": "Инсайты",
+      "recommendations": "Рекомендации"
+    }
   },
   "onboarding": {
     "welcome": "Добро пожаловать в LifePulse",
@@ -122,7 +148,8 @@
     "editInSettings": "Изменить в Настройках",
     "noGoalsYet": "Целей пока нет",
     "noGoalsHint": "Задайте 1–2 цели в Настройках, чтобы видеть прогресс здесь и на дашборде.",
-    "goToSettings": "Перейти в Настройки"
+    "goToSettings": "Перейти в Настройки",
+    "course": "Курс"
   },
   "settings": {
     "title": "Настройки",
@@ -148,7 +175,10 @@
     "goalRemoved": "Цель удалена.",
     "failedToRemoveGoal": "Не удалось удалить цель.",
     "passwordChanged": "Пароль изменён.",
-    "deleteGoal": "Удалить цель {{title}}"
+    "deleteGoal": "Удалить цель {{title}}",
+    "notificationEmail": "Email для напоминаний",
+    "notificationEmailHint": "Опционально. Используется для напоминаний по email (например, заполнить здоровье за вчера).",
+    "emailReminders": "Отправлять напоминания по email"
   },
   "assistant": {
     "title": "AI Ассистент",
@@ -164,16 +194,28 @@
     "errorNotConfigured": "Не удалось получить ответ. Проверьте настройки LLM (LLM_API_KEY или LLM_BASE_URL).",
     "errorUnavailable": "LLM не настроен или недоступен."
   },
+  "finance": {
+    "expenseCategoryMappings": "Маппинг категорий расходов",
+    "expenseCategoryMappingsHint": "Сопоставьте категории транзакций (Open Banking и др.) с полями учёта. Используется при синхронизации из интеграций.",
+    "providerCategory": "Категория провайдера",
+    "targetField": "В поле",
+    "categoryMappingAdded": "Маппинг добавлен.",
+    "categoryMappingFailed": "Не удалось добавить маппинг."
+  },
   "entries": {
     "added": "Добавлено.",
     "saved": "Сохранено.",
     "labels": {
       "health": {
+        "entry_type": "Тип записи",
         "sleep_hours": "Сон (часы)",
         "energy_level": "Энергия (1–10)",
         "supplements": "Добавки",
         "weight_kg": "Вес (кг)",
         "wellbeing": "Самочувствие (1–10)",
+        "steps": "Шаги",
+        "heart_rate_avg": "Пульс средний",
+        "workout_minutes": "Тренировка (мин)",
         "notes": "Заметки"
       },
       "finance": {
@@ -189,13 +231,17 @@
         "deep_work_hours": "Глубокая работа (часы)",
         "tasks_completed": "Задач выполнено",
         "focus_level": "Фокус (1–10)",
+        "focus_category": "Категория фокуса",
         "notes": "Заметки"
       },
       "learning": {
         "study_hours": "Учёба (часы)",
+        "course_complete": "Закончить курс",
         "topic": "Тема",
         "topics": "Темы",
         "projects": "Проекты",
+        "course": "Курс / тема",
+        "source_type": "Тип источника",
         "notes": "Заметки"
       }
     },
@@ -213,6 +259,30 @@
     "noEntriesYet": "Записей пока нет.",
     "addFirstHint": "Добавьте первую запись, чтобы начать трекинг.",
     "addFirstEntry": "Добавить первую запись"
+  },
+  "productivity": {
+    "tasks": "Задачи",
+    "tasksHint": "Добавляйте задачи с дедлайнами и отмечайте выполнение.",
+    "taskTitle": "Название задачи",
+    "taskTitlePlaceholder": "напр. Ревью PR",
+    "dueAt": "Срок",
+    "taskAdded": "Задача добавлена.",
+    "markDone": "Выполнено",
+    "noTasksYet": "Задач пока нет.",
+    "focusSessions": "Сессии фокуса (Pomodoro)",
+    "focusSessionsHint": "Фиксируйте сессии фокуса; они учитываются в часах глубокой работы.",
+    "durationMinutes": "Длительность (мин)",
+    "sessionType": "Тип",
+    "addSession": "Добавить сессию",
+    "sessionAdded": "Сессия добавлена.",
+    "localDate": "Дата",
+    "noSessionsYet": "Сессий пока нет.",
+    "completedTasks": "Выполненные задачи (привязка к списку выше)",
+    "pomodoroTimer": "Таймер Pomodoro",
+    "pomodoroTimerHint": "Задайте длительность ниже, запустите, затем завершите сессию для записи.",
+    "startTimer": "Старт",
+    "pauseTimer": "Пауза",
+    "finishSession": "Завершить сессию"
   },
   "reports": {
     "lastWeekNumbers": "Неделя в цифрах",
@@ -264,19 +334,74 @@
     "termsDisclaimer": "Сервис предоставляется «как есть». Мы не гарантируем бесперебойную работу и пригодность аналитики для каких-либо целей."
   },
   "integrations": {
-    "banner": "OAuth для Google Fit / Apple Health — скоро. Пока можно подключить источники по токенам.",
+    "banner": "Подключите Google Fit (OAuth) или загрузите экспорт Apple Health. Можно также подключить источники по токенам ниже.",
     "connectIntegration": "Подключить интеграцию",
+    "connectGoogleFit": "Google Fit (OAuth)",
+    "connectGoogleFitHint": "Редирект на авторизацию в Google; после одобрения вы вернётесь сюда.",
+    "connectWithGoogleFit": "Подключить Google Fit",
+    "uploadAppleHealth": "Импорт Apple Health",
+    "uploadAppleHealthHint": "Загрузите export.xml или ZIP с export.xml из приложения Здоровье.",
+    "selectFile": "Выбрать файл",
+    "upload": "Загрузить",
     "provider": "Провайдер",
     "accessToken": "Access token",
     "refreshToken": "Refresh token",
     "dataSources": "Источники данных",
     "lastSynced": "Последняя синхронизация",
+    "lastError": "Последняя ошибка",
     "action": "Действие",
     "sync": "Синхронизировать",
+    "updateNow": "Обновить сейчас",
+    "syncSettings": "Настройки синхронизации",
+    "syncSettingsJson": "Метрики для синхронизации (JSON, напр. {\"health\": [\"steps\", \"sleep\"], \"finance\": [\"*\"]})",
+    "syncSettingsSaved": "Настройки синхронизации сохранены.",
+    "syncSettingsError": "Не удалось сохранить настройки.",
+    "syncSettingsInvalidJson": "Некорректный JSON.",
+    "syncStarted": "Синхронизация запущена.",
+    "syncError": "Синхронизация не удалась.",
+    "googleFitNotConfigured": "Google OAuth не настроен.",
+    "importSuccess": "Импортировано записей: {{count}}.",
+    "importError": "Импорт не удался.",
     "noSources": "Нет подключённых источников.",
     "syncHistory": "История синхронизаций",
     "message": "Сообщение",
     "finished": "Завершено",
-    "noSyncHistory": "Истории синхронизаций нет."
+    "noSyncHistory": "Истории синхронизаций нет.",
+    "oauthCallbackConnecting": "Подключение…",
+    "oauthCallbackSuccess": "Google Fit подключён.",
+    "oauthCallbackError": "Не удалось подключить Google Fit.",
+    "oauthCallbackMissingCode": "Нет кода авторизации."
+  },
+  "learning": {
+    "courses": "Курсы / темы",
+    "myCourses": "Мои курсы",
+    "myCoursesHint": "Добавляйте курсы или темы, чтобы привязывать к записям обучения.",
+    "courseTitle": "Название",
+    "courseTitlePlaceholder": "напр. Основы React",
+    "kind": "Тип",
+    "courseAdded": "Курс добавлен.",
+    "courseUpdated": "Курс обновлён.",
+    "noCoursesYet": "Курсов пока нет.",
+    "status": "Статус",
+    "completed": "Завершён",
+    "markComplete": "Отметить завершённым",
+    "markIncomplete": "Снять отметку",
+    "streak": "Серия дней",
+    "streakDays": "{{count}} дн.",
+    "lastActivity": "Последняя активность",
+    "byDate": "Обучение по датам",
+    "byDateHint": "Часы и количество записей по дням (последние 14 дней).",
+    "entriesCount": "Записей"
+  },
+  "reminders": {
+    "title": "Напоминания",
+    "fillHealthYesterday": "Заполните здоровье за вчера.",
+    "fillHealth": "Заполнить"
+  },
+  "export": {
+    "healthReport": "Отчёт по здоровью (для врача)",
+    "healthReportHint": "Скачать CSV за период.",
+    "startDate": "Дата начала",
+    "endDate": "Дата окончания"
   }
 }

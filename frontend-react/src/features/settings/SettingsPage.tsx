@@ -16,6 +16,7 @@ import {
   type Goal,
   type GoalProgress,
 } from '../../shared/api/goals'
+import { listLearningCourses, type LearningCourse } from '../../shared/api/learning'
 import { usePageTitle } from '../../shared/hooks/usePageTitle'
 import { getErrorMessage, parseValidationErrors } from '../../shared/utils/validation'
 
@@ -37,6 +38,8 @@ export const SettingsPage = () => {
   const toast = useToast()
   const [fullName, setFullName] = useState(user?.full_name ?? '')
   const [defaultTimezone, setDefaultTimezone] = useState(user?.default_timezone ?? 'UTC')
+  const [notificationEmail, setNotificationEmail] = useState(user?.notification_email ?? '')
+  const [emailReminders, setEmailReminders] = useState(user?.notification_preferences?.email_reminders ?? false)
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({})
   const [currentPassword, setCurrentPassword] = useState('')
@@ -50,9 +53,12 @@ export const SettingsPage = () => {
   const [goalTargetMetric, setGoalTargetMetric] = useState('sleep_hours')
   const [goalTargetValue, setGoalTargetValue] = useState<string>('')
   const [goalDeadline, setGoalDeadline] = useState<string>('')
+  const [goalCourseId, setGoalCourseId] = useState<number | null>(null)
   const [goalSaving, setGoalSaving] = useState(false)
   const queryClient = useQueryClient()
   const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals })
+  const coursesQuery = useQuery({ queryKey: ['learning-courses'], queryFn: listLearningCourses })
+  const courses = coursesQuery.data ?? []
 
   const goals = goalsQuery.data?.goals ?? []
   const activeGoals = goals.filter((g) => !g.archived)
@@ -71,13 +77,15 @@ export const SettingsPage = () => {
       await createGoal({
         sphere: goalSphere,
         title: goalTitle.trim(),
-        target_value: goalTargetValue ? parseFloat(goalTargetValue) : null,
+        target_value: goalTargetMetric === 'course_complete' ? 1 : (goalTargetValue ? parseFloat(goalTargetValue) : null),
         target_metric: goalTargetMetric || null,
+        course_id: goalSphere === 'learning' && goalTargetMetric === 'course_complete' ? goalCourseId : null,
         deadline: goalDeadline ? goalDeadline : null,
       })
       setGoalTitle('')
       setGoalTargetValue('')
       setGoalDeadline('')
+      setGoalCourseId(null)
       const metrics = GOAL_METRICS_BY_SPHERE[goalSphere]
       setGoalTargetMetric(metrics?.[0] ?? '')
       queryClient.invalidateQueries({ queryKey: ['goals'] })
@@ -109,7 +117,12 @@ export const SettingsPage = () => {
     setProfileErrors({})
     setProfileSaving(true)
     try {
-      await updateProfile({ full_name: fullName || null, default_timezone: defaultTimezone || 'UTC' })
+      await updateProfile({
+        full_name: fullName || null,
+        default_timezone: defaultTimezone || 'UTC',
+        notification_email: notificationEmail.trim() || null,
+        notification_preferences: { email_reminders: emailReminders },
+      })
       await refreshUser()
       toast.success(t('settings.profileSaved'))
     } catch (err) {
@@ -195,6 +208,24 @@ export const SettingsPage = () => {
               <div className="field-error">{profileErrors.default_timezone}</div>
             ) : null}
           </label>
+          <label>
+            {t('settings.notificationEmail')}
+            <input
+              type="email"
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+              placeholder="email@example.com"
+            />
+            <span className="muted small">{t('settings.notificationEmailHint')}</span>
+          </label>
+          <label className="flex gap" style={{ alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              checked={emailReminders}
+              onChange={(e) => setEmailReminders(e.target.checked)}
+            />
+            <span>{t('settings.emailReminders')}</span>
+          </label>
           <div className="form-actions">
             <button type="submit" disabled={profileSaving}>
               {profileSaving ? t('common.saving') : t('common.save')}
@@ -273,16 +304,35 @@ export const SettingsPage = () => {
                 ))}
               </select>
             </label>
-            <label>
-              {t('settings.targetValueOptional')}
-              <input
-                type="number"
-                step="any"
-                value={goalTargetValue}
-                onChange={(e) => setGoalTargetValue(e.target.value)}
-                placeholder={t('settings.targetValuePlaceholder')}
-              />
-            </label>
+            {goalTargetMetric !== 'course_complete' && (
+              <label>
+                {t('settings.targetValueOptional')}
+                <input
+                  type="number"
+                  step="any"
+                  value={goalTargetValue}
+                  onChange={(e) => setGoalTargetValue(e.target.value)}
+                  placeholder={t('settings.targetValuePlaceholder')}
+                />
+              </label>
+            )}
+            {goalSphere === 'learning' && goalTargetMetric === 'course_complete' && (
+              <label>
+                {t('goals.course')}
+                <select
+                  value={goalCourseId ?? ''}
+                  onChange={(e) => setGoalCourseId(e.target.value ? Number(e.target.value) : null)}
+                  required
+                >
+                  <option value="">—</option>
+                  {courses.map((c: LearningCourse) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label>
               {t('goals.deadline')}
               <input

@@ -29,6 +29,23 @@ def apply_update(entry, payload):
         setattr(entry, key, value)
 
 
+def build_entries_query(
+    query,
+    model,
+    start_date: Optional[date],
+    end_date: Optional[date],
+    user_id: Optional[int] = None,
+):
+    """Return filtered query (no order/limit/offset) for count or list with pagination."""
+    if user_id is not None:
+        query = query.filter(model.user_id == user_id)
+    if start_date:
+        query = query.filter(model.local_date >= start_date)
+    if end_date:
+        query = query.filter(model.local_date <= end_date)
+    return query
+
+
 def list_entries(
     query,
     model,
@@ -36,11 +53,7 @@ def list_entries(
     end_date: Optional[date],
     limit: int,
     user_id: Optional[int] = None,
+    offset: int = 0,
 ):
-    if user_id is not None:
-        query = query.filter(model.user_id == user_id)
-    if start_date:
-        query = query.filter(model.local_date >= start_date)
-    if end_date:
-        query = query.filter(model.local_date <= end_date)
-    return query.order_by(model.local_date.desc(), model.id.desc()).limit(limit)
+    q = build_entries_query(query, model, start_date, end_date, user_id)
+    return q.order_by(model.local_date.desc(), model.id.desc()).offset(offset).limit(limit)

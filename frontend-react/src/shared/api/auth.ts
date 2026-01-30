@@ -6,6 +6,9 @@ export type User = {
   full_name?: string | null
   default_timezone?: string | null
   role: string
+  dashboard_settings?: { enabled_blocks?: string[]; order?: string[] } | null
+  notification_email?: string | null
+  notification_preferences?: { email_reminders?: boolean } | null
 }
 
 export type LoginResponse = {
@@ -27,6 +30,9 @@ export const getCurrentUser = () => api.get<User>('/auth/me').then((res) => res.
 export const updateProfile = (payload: {
   full_name?: string | null
   default_timezone?: string | null
+  dashboard_settings?: { enabled_blocks?: string[]; order?: string[] } | null
+  notification_email?: string | null
+  notification_preferences?: { email_reminders?: boolean } | null
 }) => api.patch<User>('/auth/me', payload).then((res) => res.data)
 
 export const changePassword = (payload: {

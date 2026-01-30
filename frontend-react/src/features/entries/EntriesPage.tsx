@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -7,23 +7,31 @@ import { useToast } from '../../shared/components/Toast'
 import { usePageTitle } from '../../shared/hooks/usePageTitle'
 import { parseValidationErrors } from '../../shared/utils/validation'
 
+type SelectOption = { value: string; label: string }
+
 type FieldConfig = {
   name: string
   label: string
-  type: 'number' | 'int' | 'text'
+  type: 'number' | 'int' | 'text' | 'select' | 'multiselect'
   min?: number
   max?: number
   step?: number
   optional?: boolean
+  /** For type 'select' / 'multiselect': list of options. */
+  options?: SelectOption[]
+  /** For type 'select': submit value as number (e.g. course_id). For 'multiselect': 'number[]'. */
+  valueType?: 'string' | 'number' | 'number[]'
 }
 
 type EntriesPageProps = {
   title: string
   resource: string
   fields: FieldConfig[]
+  /** Optional initial date (YYYY-MM-DD) e.g. from /health?date=... */
+  initialDate?: string
 }
 
-export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
+export const EntriesPage = ({ title, resource, fields, initialDate }: EntriesPageProps) => {
   usePageTitle(title)
   const queryClient = useQueryClient()
   const toast = useToast()
@@ -34,6 +42,9 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
 
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null)
   const [date, setDate] = useState('')
+  useEffect(() => {
+    if (initialDate) setDate(initialDate)
+  }, [initialDate])
   const [time, setTime] = useState('08:00')
   const [timezone, setTimezone] = useState('UTC')
   const [form, setForm] = useState<Record<string, string>>({})
@@ -84,6 +95,10 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
     const nextForm: Record<string, string> = {}
     fields.forEach((field) => {
       const value = entry[field.name]
+      if (field.type === 'multiselect' && Array.isArray(value)) {
+        nextForm[field.name] = value.map(String).join(',')
+        return
+      }
       nextForm[field.name] = value === null || value === undefined ? '' : String(value)
     })
     setForm(nextForm)
@@ -101,6 +116,26 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
 
     fields.forEach((field) => {
       const rawValue = form[field.name]
+      if (field.type === 'multiselect') {
+        const ids = rawValue
+          ? rawValue.split(',').map((s) => Number.parseInt(s.trim(), 10)).filter((n) => !Number.isNaN(n))
+          : []
+        payload[field.name] = field.optional && ids.length === 0 ? null : ids
+        return
+      }
+      if (field.type === 'select') {
+        const value = rawValue || (field.options?.[0]?.value ?? null)
+        if (!value && (field.optional || field.valueType === 'number')) {
+          payload[field.name] = null
+          return
+        }
+        if (field.valueType === 'number') {
+          payload[field.name] = value ? Number.parseInt(value, 10) : null
+        } else {
+          payload[field.name] = value
+        }
+        return
+      }
       if (field.type === 'text') {
         payload[field.name] = rawValue || null
         return
@@ -158,24 +193,73 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
             />
             {fieldErrors.timezone ? <div className="field-error">{fieldErrors.timezone}</div> : null}
           </label>
-          {fields.map((field) => (
-            <label key={field.name}>
-              {field.label}
-              <input
-                type={field.type === 'text' ? 'text' : 'number'}
-                min={field.min}
-                max={field.max}
-                step={field.step ?? (field.type === 'int' ? 1 : 0.1)}
-                value={form[field.name] ?? ''}
-                onChange={(e) => {
-                  setForm((prev) => ({ ...prev, [field.name]: e.target.value }))
-                  setFieldErrors((prev) => ({ ...prev, [field.name]: '' }))
-                }}
-                aria-invalid={!!fieldErrors[field.name]}
-              />
-              {fieldErrors[field.name] ? <div className="field-error">{fieldErrors[field.name]}</div> : null}
-            </label>
-          ))}
+          {fields.map((field) =>
+            field.type === 'multiselect' ? (
+              <div key={field.name} className="form-group">
+                <span className="label">{field.label}</span>
+                <div className="checkbox-group">
+                  {(field.options ?? []).map((opt) => {
+                    const selected = (form[field.name] ?? '').split(',').map((s) => s.trim()).includes(opt.value)
+                    return (
+                      <label key={opt.value} className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={(e) => {
+                            const current = (form[field.name] ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+                            const next = e.target.checked
+                              ? [...current, opt.value]
+                              : current.filter((v) => v !== opt.value)
+                            setForm((prev) => ({ ...prev, [field.name]: next.join(',') }))
+                            setFieldErrors((prev) => ({ ...prev, [field.name]: '' }))
+                          }}
+                        />
+                        {opt.label}
+                      </label>
+                    )
+                  })}
+                </div>
+                {fieldErrors[field.name] ? <div className="field-error">{fieldErrors[field.name]}</div> : null}
+              </div>
+            ) : field.type === 'select' ? (
+              <label key={field.name}>
+                {field.label}
+                <select
+                  value={form[field.name] ?? ''}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, [field.name]: e.target.value }))
+                    setFieldErrors((prev) => ({ ...prev, [field.name]: '' }))
+                  }}
+                  aria-invalid={!!fieldErrors[field.name]}
+                >
+                  <option value="">{t('common.select')}</option>
+                  {(field.options ?? []).map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors[field.name] ? <div className="field-error">{fieldErrors[field.name]}</div> : null}
+              </label>
+            ) : (
+              <label key={field.name}>
+                {field.label}
+                <input
+                  type={field.type === 'text' ? 'text' : 'number'}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step ?? (field.type === 'int' ? 1 : 0.1)}
+                  value={form[field.name] ?? ''}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, [field.name]: e.target.value }))
+                    setFieldErrors((prev) => ({ ...prev, [field.name]: '' }))
+                  }}
+                  aria-invalid={!!fieldErrors[field.name]}
+                />
+                {fieldErrors[field.name] ? <div className="field-error">{fieldErrors[field.name]}</div> : null}
+              </label>
+            ),
+          )}
           <div className="form-actions">
             <button type="submit" disabled={mutation.isPending}>
               {editing ? t('common.save') : t('common.add')}

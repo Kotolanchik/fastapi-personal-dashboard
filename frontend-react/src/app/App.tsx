@@ -14,6 +14,7 @@ import { HealthPage } from '../features/entries/HealthPage'
 import { LearningPage } from '../features/entries/LearningPage'
 import { ProductivityPage } from '../features/entries/ProductivityPage'
 import { AssistantPage } from '../features/assistant/AssistantPage'
+import { IntegrationsOAuthCallbackPage } from '../features/integrations/IntegrationsOAuthCallbackPage'
 import { IntegrationsPage } from '../features/integrations/IntegrationsPage'
 import { LandingPage } from '../features/landing/LandingPage'
 import { NotFoundPage } from '../features/errors/NotFoundPage'
@@ -48,6 +49,7 @@ export const App = () => (
           <Route path="productivity" element={<ProductivityPage />} />
           <Route path="learning" element={<LearningPage />} />
           <Route path="integrations" element={<IntegrationsPage />} />
+          <Route path="integrations/oauth-callback" element={<IntegrationsOAuthCallbackPage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

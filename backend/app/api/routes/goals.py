@@ -47,6 +47,23 @@ def create_goal(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Maximum {schemas.GOAL_MAX_ACTIVE} active goals. Archive or delete one first.",
         )
+    from ...services.goals import count_active_goals_by_sphere
+    if count_active_goals_by_sphere(db, user.id, payload.sphere) >= schemas.GOAL_MAX_PER_SPHERE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maximum {schemas.GOAL_MAX_PER_SPHERE} active goals per sphere ({payload.sphere}). Archive or delete one first.",
+        )
+    if getattr(payload, "course_id", None) is not None:
+        from ... import models
+        course = db.query(models.LearningCourse).filter(
+            models.LearningCourse.id == payload.course_id,
+            models.LearningCourse.user_id == user.id,
+        ).first()
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Course not found or not owned by you.",
+            )
     return create_goal_svc(db, user.id, payload)
 
 

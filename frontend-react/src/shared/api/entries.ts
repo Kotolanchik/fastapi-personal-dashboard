@@ -9,12 +9,16 @@ export type BaseEntry = {
 }
 
 export type HealthEntry = BaseEntry & {
+  entry_type?: 'day' | 'morning' | 'evening'
   sleep_hours: number
   energy_level: number
   supplements?: string | null
   weight_kg?: number | null
   wellbeing: number
   notes?: string | null
+  steps?: number | null
+  heart_rate_avg?: number | null
+  workout_minutes?: number | null
 }
 
 export type FinanceEntry = BaseEntry & {
@@ -30,6 +34,8 @@ export type ProductivityEntry = BaseEntry & {
   deep_work_hours: number
   tasks_completed: number
   focus_level: number
+  focus_category?: string | null
+  completed_task_ids?: number[]
   notes?: string | null
 }
 
@@ -38,10 +44,24 @@ export type LearningEntry = BaseEntry & {
   topics?: string | null
   projects?: string | null
   notes?: string | null
+  course_id?: number | null
+  source_type?: string | null
 }
 
-export const fetchEntries = <T>(resource: string) =>
-  api.get<T[]>(`/${resource}`).then((res) => res.data)
+export type FetchEntriesParams = {
+  start_date?: string
+  end_date?: string
+  offset?: number
+  limit?: number
+}
+
+export const fetchEntries = <T>(
+  resource: string,
+  params?: FetchEntriesParams,
+) =>
+  api
+    .get<T[]>(`/${resource}`, { params })
+    .then((res) => res.data)
 
 export const createEntry = (resource: string, payload: Record<string, unknown>) =>
   api.post(`/${resource}`, payload).then((res) => res.data)

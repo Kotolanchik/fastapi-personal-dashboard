@@ -6,12 +6,18 @@ from ..models import DataSource, SyncJob
 from .registry import get_provider
 
 
-def create_sync_job(db: Session, user_id: int, provider: str) -> SyncJob:
+def create_sync_job(
+    db: Session,
+    user_id: int,
+    provider: str,
+    data_source_id: int | None = None,
+) -> SyncJob:
     job = SyncJob(
         user_id=user_id,
         provider=provider,
         status="queued",
         created_at=datetime.now(timezone.utc),
+        data_source_id=data_source_id,
     )
     db.add(job)
     db.commit()
@@ -19,10 +25,21 @@ def create_sync_job(db: Session, user_id: int, provider: str) -> SyncJob:
     return job
 
 
-def run_sync(db: Session, source: DataSource, settings=None) -> SyncJob:
+def run_sync(
+    db: Session,
+    source: DataSource,
+    job: SyncJob | None = None,
+    settings=None,
+) -> SyncJob:
     from ..core.config import get_settings
     settings = settings or get_settings()
-    job = create_sync_job(db, source.user_id, source.provider)
+    if job is None:
+        job = create_sync_job(
+            db,
+            source.user_id,
+            source.provider,
+            data_source_id=getattr(source, "id", None),
+        )
     provider = get_provider(source.provider)
     job.started_at = datetime.now(timezone.utc)
 

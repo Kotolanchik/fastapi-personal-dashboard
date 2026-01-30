@@ -1,11 +1,11 @@
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from ... import models, schemas
-from ...services.entries import apply_timestamp, apply_update, list_entries
+from ...services.entries import apply_timestamp, apply_update, build_entries_query, list_entries
 from ..deps import get_current_user, get_db_session
 
 router = APIRouter(prefix="/health", tags=["health"])
@@ -39,22 +39,30 @@ def create_health(
 
 @router.get("", response_model=List[schemas.HealthEntryRead])
 def list_health(
+    response: Response,
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
-    limit: int = Query(200, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db_session),
     user=Depends(get_current_user),
 ):
-    query = db.query(models.HealthEntry)
-    query = list_entries(
-        query,
+    base = build_entries_query(
+        db.query(models.HealthEntry),
         models.HealthEntry,
         start_date,
         end_date,
-        limit,
         user_id=user.id,
     )
-    return query.all()
+    total = base.count()
+    response.headers["X-Total-Count"] = str(total)
+    items = (
+        base.order_by(models.HealthEntry.local_date.desc(), models.HealthEntry.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return items
 
 
 @router.put("/{entry_id}", response_model=schemas.HealthEntryRead)

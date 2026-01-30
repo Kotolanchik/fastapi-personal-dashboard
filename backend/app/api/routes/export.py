@@ -177,3 +177,17 @@ def export_health_report(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/export/health-report-pdf")
+def export_health_report_pdf(
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    user=Depends(get_current_user),
+):
+    """Stub: PDF export not implemented. Use GET /export/health-report for CSV."""
+    from fastapi import HTTPException
+    raise HTTPException(
+        status_code=501,
+        detail="PDF export not implemented. Use GET /export/health-report?start_date=&end_date= for CSV.",
+    )

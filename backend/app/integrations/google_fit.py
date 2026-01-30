@@ -4,21 +4,23 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
 import requests
+from sqlalchemy.orm import Session
 
 from ..models import DataSource, HealthEntry
 from .base import IntegrationProvider, SyncResult
 
-
-GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token"
-GOOGLE_OAUTH_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 FITNESS_SCOPES = [
     "https://www.googleapis.com/auth/fitness.activity.read",
     "https://www.googleapis.com/auth/fitness.body.read",
 ]
-FITNESS_AGGREGATE_URL = "https://fitness.googleapis.com/fitness/v1/users/me/dataset:aggregate"
 
 
-def get_oauth_url(client_id: str, redirect_uri: str, state: Optional[str] = None) -> str:
+def get_oauth_url(
+    client_id: str,
+    redirect_uri: str,
+    auth_url: str,
+    state: Optional[str] = None,
+) -> str:
     scope = " ".join(FITNESS_SCOPES)
     params = {
         "client_id": client_id,
@@ -31,7 +33,7 @@ def get_oauth_url(client_id: str, redirect_uri: str, state: Optional[str] = None
     if state:
         params["state"] = state
     qs = "&".join(f"{k}={v}" for k, v in params.items())
-    return f"{GOOGLE_OAUTH_AUTH_URL}?{qs}"
+    return f"{auth_url}?{qs}"
 
 
 def exchange_code(
@@ -39,9 +41,10 @@ def exchange_code(
     client_id: str,
     client_secret: str,
     redirect_uri: str,
+    token_url: str,
 ) -> dict[str, Any]:
     resp = requests.post(
-        GOOGLE_OAUTH_TOKEN_URL,
+        token_url,
         data={
             "code": code,
             "client_id": client_id,
@@ -60,9 +63,10 @@ def refresh_access_token(
     refresh_token: str,
     client_id: str,
     client_secret: str,
+    token_url: str,
 ) -> dict[str, Any]:
     resp = requests.post(
-        GOOGLE_OAUTH_TOKEN_URL,
+        token_url,
         data={
             "refresh_token": refresh_token,
             "client_id": client_id,
@@ -87,7 +91,12 @@ def _settings_include(source: DataSource, metric: str) -> bool:
     return isinstance(health, list) and metric in health
 
 
-def _fetch_steps(access_token: str, start_date: date, end_date: date) -> dict[date, int]:
+def _fetch_steps(
+    access_token: str,
+    aggregate_url: str,
+    start_date: date,
+    end_date: date,
+) -> dict[date, int]:
     """Call Fitness API aggregate for steps; return dict local_date -> steps."""
     start_ts = int(datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc).timestamp() * 1000)
     end_ts = int(
@@ -101,7 +110,7 @@ def _fetch_steps(access_token: str, start_date: date, end_date: date) -> dict[da
         "endTimeMillis": str(end_ts),
     }
     resp = requests.post(
-        FITNESS_AGGREGATE_URL,
+        aggregate_url,
         json=body,
         headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
         timeout=30,
@@ -122,6 +131,46 @@ def _fetch_steps(access_token: str, start_date: date, end_date: date) -> dict[da
                     total += int(val.get("intVal", 0))
         result[local_date] = result.get(local_date, 0) + total
     return result
+
+
+def map_fitness_steps_to_health_entries(
+    session: Session,
+    user_id: int,
+    steps_by_date: dict[date, int],
+) -> int:
+    """Upsert HealthEntry from Fitness API steps_by_date. Returns count of records touched."""
+    tz_name = "UTC"
+    imported = 0
+    for local_date, steps in steps_by_date.items():
+        if steps <= 0:
+            continue
+        existing = (
+            session.query(HealthEntry)
+            .filter(
+                HealthEntry.user_id == user_id,
+                HealthEntry.local_date == local_date,
+            )
+            .first()
+        )
+        if existing:
+            existing.steps = (existing.steps or 0) + steps
+            imported += 1
+        else:
+            midnight_utc = datetime(local_date.year, local_date.month, local_date.day, tzinfo=timezone.utc)
+            entry = HealthEntry(
+                user_id=user_id,
+                entry_type="day",
+                sleep_hours=0.0,
+                energy_level=5,
+                wellbeing=5,
+                steps=steps,
+                recorded_at=midnight_utc,
+                local_date=local_date,
+                timezone=tz_name,
+            )
+            session.add(entry)
+            imported += 1
+    return imported
 
 
 class GoogleFitProvider(IntegrationProvider):
@@ -145,9 +194,10 @@ class GoogleFitProvider(IntegrationProvider):
                 message="Google OAuth not configured (GOOGLE_CLIENT_ID/SECRET)",
                 stats={},
             )
+        token_url = getattr(settings, "google_oauth_token_url", None) or "https://oauth2.googleapis.com/token"
         if source.refresh_token and (not access_token or self._token_expired(source)):
             try:
-                tok = refresh_access_token(source.refresh_token, client_id, client_secret)
+                tok = refresh_access_token(source.refresh_token, client_id, client_secret, token_url)
                 access_token = tok.get("access_token")
                 if access_token:
                     source.access_token = access_token
@@ -161,43 +211,16 @@ class GoogleFitProvider(IntegrationProvider):
             return SyncResult(status="failed", message="No access token", stats={})
         end_date = date.today()
         start_date = end_date - timedelta(days=30)
+        aggregate_url = getattr(settings, "fitness_aggregate_url", None) or (
+            "https://fitness.googleapis.com/fitness/v1/users/me/dataset:aggregate"
+        )
         try:
-            steps_by_date = _fetch_steps(access_token, start_date, end_date)
+            steps_by_date = _fetch_steps(access_token, aggregate_url, start_date, end_date)
         except Exception as e:
             return SyncResult(status="failed", message=str(e)[:500], stats={})
         if not _settings_include(source, "steps"):
             return SyncResult(status="success", message="Sync OK (steps disabled in settings)", stats={"days": 0})
-        imported = 0
-        tz_name = "UTC"
-        for local_date, steps in steps_by_date.items():
-            if steps <= 0:
-                continue
-            existing = (
-                session.query(HealthEntry)
-                .filter(
-                    HealthEntry.user_id == source.user_id,
-                    HealthEntry.local_date == local_date,
-                )
-                .first()
-            )
-            if existing:
-                existing.steps = (existing.steps or 0) + steps
-                imported += 1
-            else:
-                midnight_utc = datetime(local_date.year, local_date.month, local_date.day, tzinfo=timezone.utc)
-                entry = HealthEntry(
-                    user_id=source.user_id,
-                    entry_type="day",
-                    sleep_hours=0.0,
-                    energy_level=5,
-                    wellbeing=5,
-                    steps=steps,
-                    recorded_at=midnight_utc,
-                    local_date=local_date,
-                    timezone=tz_name,
-                )
-                session.add(entry)
-                imported += 1
+        imported = map_fitness_steps_to_health_entries(session, source.user_id, steps_by_date)
         session.commit()
         return SyncResult(
             status="success",

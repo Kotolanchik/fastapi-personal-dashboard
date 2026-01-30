@@ -85,3 +85,23 @@ export const getWeekdayTrends = () =>
   api
     .get<WeekdayTrendsResponse>('/analytics/weekday-trends')
     .then((res) => res.data)
+
+export type FocusByCategoryItem = {
+  category: string
+  hours: number
+}
+
+export type ProductivityDashboardResponse = {
+  best_worst_weekday: BestWorstWeekdayItem[]
+  trends_14: LinearTrendItem[]
+  trends_30: LinearTrendItem[]
+  session_deep_work_hours_total: number | null
+  top_hours: number[] | null
+  focus_by_category: FocusByCategoryItem[] | null
+  insight: string | null
+}
+
+export const getProductivityDashboard = () =>
+  api
+    .get<ProductivityDashboardResponse>('/analytics/productivity-dashboard')
+    .then((res) => res.data)
