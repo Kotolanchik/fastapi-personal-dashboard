@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-wheel-metadata/
+data/
+.env
+.DS_Store
+.pytest_cache/
+frontend/.streamlit/
+*.db
