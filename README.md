@@ -12,6 +12,7 @@ MVP‑приложение для личной аналитики: сбор да
 - Экспорт в CSV
 - Поддержка часовых поясов
 - Базовая аутентификация (JWT) и роли
+- Кэширование аналитики (Redis, опционально)
 
 ## Архитектура
 
@@ -19,6 +20,7 @@ MVP‑приложение для личной аналитики: сбор да
 - **Frontend**: Streamlit (позже можно заменить на React/Vue)
 - **DWH**: витрина данных с измерениями/фактами
 - **Analytics**: Pandas + NumPy + Statsmodels
+- **Cache**: Redis (опционально)
 
 ## Структура проекта
 
@@ -43,6 +45,7 @@ backend/
       security.py         # хеширование паролей + JWT
     services/
       entries.py          # общие CRUD‑операции
+      cache.py            # Redis кэширование
       users.py            # управление пользователями
     analytics.py          # корреляции и инсайты
     database.py           # подключение к БД
@@ -72,13 +75,23 @@ dwh/
   models.py               # DWH схема
 tests/                    # pytest
 .github/workflows/ci.yml  # CI
+.github/workflows/docker-publish.yml # Docker registry + CI/CD
 .pre-commit-config.yaml   # git hooks
 pyproject.toml            # ruff config
 requirements-dev.txt      # dev зависимости
 requirements-dwh.txt      # bigdata стек
 deploy/k8s/               # Kubernetes манифесты
+  configmap.yaml          # конфиг приложения
+  secret.example.yaml     # секреты (пример)
+  redis.yaml              # Redis (опционально)
+  migrate-job.yaml        # миграции
+deploy/helm/personal-dashboard/ # Helm chart
 docker-compose.yml        # локальная разработка
 docker-compose.prod.yml   # production‑схема
+docker-compose.managed.yml # managed Postgres/Redis
+.env.example              # пример окружения
+.env.prod.example         # окружение для продакшена
+Makefile                  # команды для быстрого запуска
 ```
 
 ## Быстрый старт (локально)
@@ -123,14 +136,36 @@ make run-frontend
 docker compose -f docker-compose.prod.yml up --build
 ```
 
+Для managed Postgres/Redis:
+
+```bash
+docker compose -f docker-compose.managed.yml up --build
+```
+
 ### Kubernetes
 
 ```bash
 kubectl apply -f deploy/k8s/namespace.yaml
+kubectl apply -f deploy/k8s/configmap.yaml
+kubectl apply -f deploy/k8s/secret.example.yaml
 kubectl apply -f deploy/k8s/postgres.yaml
+kubectl apply -f deploy/k8s/redis.yaml
+kubectl apply -f deploy/k8s/migrate-job.yaml
 kubectl apply -f deploy/k8s/backend.yaml
 kubectl apply -f deploy/k8s/frontend.yaml
 kubectl apply -f deploy/k8s/ingress.yaml
+```
+
+Для managed Postgres/Redis не применяйте `postgres.yaml` и `redis.yaml`,
+а укажите внешние URL в секрете.
+
+### Helm
+
+```bash
+helm install personal-dashboard deploy/helm/personal-dashboard \
+  --set secrets.databaseUrl=... \
+  --set secrets.redisUrl=... \
+  --set secrets.secretKey=...
 ```
 
 ## Аутентификация и роли (RBAC)
@@ -155,6 +190,8 @@ UPDATE users SET role='admin' WHERE email='admin@example.com';
 - `SECRET_KEY` (обязательно в проде)
 - `ACCESS_TOKEN_EXPIRE_MINUTES` (по умолчанию 120)
 - `AUTO_CREATE_TABLES` (по умолчанию false)
+- `REDIS_URL` (опционально, для кэша)
+- `CACHE_TTL_SECONDS` (по умолчанию 300)
 
 **Frontend:**
 - `API_URL` (по умолчанию `http://localhost:8000`)
@@ -205,6 +242,17 @@ dbt (пример):
 ```bash
 DBT_PROFILES_DIR=dwh/dbt dbt run --project-dir dwh/dbt --vars '{"parquet_path":"dwh/parquet"}'
 ```
+
+## Docker registry и CI/CD
+
+В репозитории настроен workflow `.github/workflows/docker-publish.yml`, который
+собирает и пушит образы в GHCR при пуше в `main` или при создании тега `v*`.
+
+Пример имён образов:
+- `ghcr.io/<owner>/<repo>-backend`
+- `ghcr.io/<owner>/<repo>-frontend`
+
+Используйте эти образы в Helm/к8s манифестах.
 
 ## Инструменты разработки
 
