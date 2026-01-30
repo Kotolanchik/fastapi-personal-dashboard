@@ -13,6 +13,8 @@ MVP‑приложение для личной аналитики: сбор да
 - Поддержка часовых поясов
 - Базовая аутентификация (JWT) и роли
 - Кэширование аналитики (Redis, опционально)
+- Интеграции (Google Fit, Apple Health, Open Banking — базовый каркас)
+- Тарифы и подписки (каркас монетизации)
 
 ## Архитектура
 
@@ -43,6 +45,8 @@ backend/
       config.py           # настройки окружения
       constants.py        # роли и константы
       security.py         # хеширование паролей + JWT
+    integrations/         # интеграции с внешними источниками
+    ml/                   # базовые рекомендации/ML
     services/
       entries.py          # общие CRUD‑операции
       cache.py            # Redis кэширование
@@ -267,12 +271,15 @@ pytest
 
 - `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
 - `GET /admin/users`, `PUT /admin/users/{id}/role`
+- `GET /integrations/providers`, `POST /integrations`, `POST /integrations/{provider}/sync`
+- `GET /billing/plans`, `POST /billing/subscribe`, `GET /billing/subscription`
 - `POST /health`, `GET /health`, `PUT /health/{id}`, `DELETE /health/{id}`
 - `POST /finance`, `GET /finance`, `PUT /finance/{id}`, `DELETE /finance/{id}`
 - `POST /productivity`, `GET /productivity`, `PUT /productivity/{id}`, `DELETE /productivity/{id}`
 - `POST /learning`, `GET /learning`, `PUT /learning/{id}`, `DELETE /learning/{id}`
 - `GET /analytics/correlations`
 - `GET /analytics/insights`
+- `GET /analytics/recommendations`
 - `GET /export?category=health|finance|productivity|learning|daily`
 
 ## Перспективы развития

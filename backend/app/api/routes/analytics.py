@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from ... import analytics, schemas
 from ...core.config import get_settings
+from ...ml.recommender import recommendations_payload
 from ...services.cache import get_json, set_json
 from ..deps import get_current_user, get_db_session
 
@@ -39,6 +40,25 @@ def insights(
         return cached
 
     payload = analytics.insights_payload(db, user_id=user.id)
+    cache_payload = dict(payload)
+    cache_payload["generated_at"] = payload["generated_at"].isoformat()
+    set_json(cache_key, cache_payload, settings.cache_ttl_seconds)
+    return payload
+
+
+@router.get("/recommendations", response_model=schemas.RecommendationsResponse)
+def recommendations(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    settings = get_settings()
+    cache_key = f"recommendations:{user.id}"
+    cached = get_json(cache_key)
+    if cached:
+        return cached
+
+    df = analytics.build_daily_dataframe(db, user_id=user.id)
+    payload = recommendations_payload(df)
     cache_payload = dict(payload)
     cache_payload["generated_at"] = payload["generated_at"].isoformat()
     set_json(cache_key, cache_payload, settings.cache_ttl_seconds)

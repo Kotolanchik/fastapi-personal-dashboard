@@ -1,4 +1,14 @@
-from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+)
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -25,6 +35,8 @@ class User(Base):
     finance_entries = relationship("FinanceEntry", back_populates="user")
     productivity_entries = relationship("ProductivityEntry", back_populates="user")
     learning_entries = relationship("LearningEntry", back_populates="user")
+    data_sources = relationship("DataSource", back_populates="user")
+    subscriptions = relationship("Subscription", back_populates="user")
 
 
 class HealthEntry(Base, TimestampMixin):
@@ -77,3 +89,68 @@ class LearningEntry(Base, TimestampMixin):
     notes = Column(String, nullable=True)
 
     user = relationship("User", back_populates="learning_entries")
+
+
+class DataSource(Base):
+    __tablename__ = "data_sources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    provider = Column(String(64), nullable=False, index=True)
+    status = Column(String(32), nullable=False, default="connected")
+    access_token = Column(String(512), nullable=True)
+    refresh_token = Column(String(512), nullable=True)
+    token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    last_synced_at = Column(DateTime(timezone=True), nullable=True)
+    metadata_json = Column("metadata", JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+    user = relationship("User", back_populates="data_sources")
+
+
+class SyncJob(Base):
+    __tablename__ = "sync_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    provider = Column(String(64), nullable=False, index=True)
+    status = Column(String(32), nullable=False, default="queued")
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    message = Column(String(512), nullable=True)
+    stats = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(64), unique=True, nullable=False)
+    name = Column(String(128), nullable=False)
+    price_monthly = Column(Float, nullable=False)
+    currency = Column(String(8), nullable=False, default="USD")
+    is_active = Column(Boolean, nullable=False, default=True)
+    features = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    subscriptions = relationship("Subscription", back_populates="plan")
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=False)
+    status = Column(String(32), nullable=False, default="active")
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    ends_at = Column(DateTime(timezone=True), nullable=True)
+    cancel_at_period_end = Column(Boolean, nullable=False, default=False)
+    external_customer_id = Column(String(128), nullable=True)
+    external_subscription_id = Column(String(128), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    user = relationship("User", back_populates="subscriptions")
+    plan = relationship("Plan", back_populates="subscriptions")

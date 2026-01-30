@@ -1,6 +1,17 @@
 from fastapi import APIRouter
 
-from .routes import analytics, auth, export, finance, health, learning, productivity, admin
+from .routes import (
+    admin,
+    analytics,
+    auth,
+    billing,
+    export,
+    finance,
+    health,
+    integrations,
+    learning,
+    productivity,
+)
 
 api_router = APIRouter()
 
@@ -12,3 +23,5 @@ api_router.include_router(analytics.router)
 api_router.include_router(export.router)
 api_router.include_router(auth.router)
 api_router.include_router(admin.router)
+api_router.include_router(integrations.router)
+api_router.include_router(billing.router)

@@ -178,3 +178,98 @@ class InsightItem(BaseModel):
 class InsightsResponse(BaseModel):
     generated_at: datetime
     insights: list[InsightItem]
+
+
+class DataSourceBase(BaseModel):
+    provider: str = Field(min_length=2, max_length=64)
+    status: Optional[str] = Field(default="connected", max_length=32)
+    metadata: Optional[dict] = Field(default=None, alias="metadata_json")
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class DataSourceCreate(DataSourceBase):
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    token_expires_at: Optional[datetime] = None
+
+
+class DataSourceUpdate(BaseModel):
+    status: Optional[str] = None
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    token_expires_at: Optional[datetime] = None
+    metadata: Optional[dict] = Field(default=None, alias="metadata_json")
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class DataSourceRead(DataSourceBase):
+    id: int
+    last_synced_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class SyncJobRead(BaseModel):
+    id: int
+    provider: str
+    status: str
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    message: Optional[str] = None
+    stats: Optional[dict] = None
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class PlanBase(BaseModel):
+    code: str = Field(min_length=2, max_length=64)
+    name: str = Field(min_length=2, max_length=128)
+    price_monthly: float = Field(ge=0)
+    currency: str = Field(default="USD", max_length=8)
+    is_active: bool = True
+    features: Optional[dict] = None
+
+
+class PlanCreate(PlanBase):
+    pass
+
+
+class PlanRead(PlanBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class SubscriptionCreate(BaseModel):
+    plan_id: int
+
+
+class SubscriptionRead(BaseModel):
+    id: int
+    plan_id: int
+    status: str
+    started_at: datetime
+    ends_at: Optional[datetime] = None
+    cancel_at_period_end: bool
+    external_customer_id: Optional[str] = None
+    external_subscription_id: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class RecommendationsResponse(BaseModel):
+    generated_at: datetime
+    recommendations: list[InsightItem]

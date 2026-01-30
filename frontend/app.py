@@ -232,6 +232,8 @@ tabs = st.tabs(
         "Learning",
         "Dashboard",
         "Export",
+        "Integrations",
+        "Billing",
     ]
 )
 
@@ -484,3 +486,57 @@ with tabs[5]:
             )
         else:
             st.error(f"Export failed: {response.status_code}")
+
+
+with tabs[6]:
+    st.header("Integrations")
+    providers = api_request("GET", "/integrations/providers")
+    provider_options = providers.get("providers", []) if providers else []
+
+    with st.form("connect_integration_form"):
+        provider = st.selectbox("Provider", provider_options)
+        access_token = st.text_input("Access token (optional)", type="password")
+        refresh_token = st.text_input("Refresh token (optional)", type="password")
+        submitted = st.form_submit_button("Connect integration")
+        if submitted:
+            payload = {
+                "provider": provider,
+                "access_token": access_token or None,
+                "refresh_token": refresh_token or None,
+            }
+            api_request("POST", "/integrations", payload)
+            st.success("Integration saved.")
+
+    sources = api_request("GET", "/integrations") or []
+    if sources:
+        st.subheader("Connected sources")
+        st.dataframe(pd.DataFrame(sources), use_container_width=True)
+        for source in sources:
+            if st.button(f"Sync {source['provider']}", key=f"sync_{source['id']}"):
+                job = api_request("POST", f"/integrations/{source['provider']}/sync")
+                if job:
+                    st.success(f"Sync status: {job.get('status')}")
+    else:
+        st.info("No integrations connected yet.")
+
+
+with tabs[7]:
+    st.header("Billing")
+    plans = api_request("GET", "/billing/plans") or []
+    if plans:
+        st.subheader("Available plans")
+        st.dataframe(pd.DataFrame(plans), use_container_width=True)
+        plan_options = {f"{plan['name']} ({plan['price_monthly']} {plan['currency']})": plan["id"] for plan in plans}
+        selected = st.selectbox("Choose plan", list(plan_options.keys()))
+        if st.button("Subscribe"):
+            plan_id = plan_options[selected]
+            subscription = api_request("POST", "/billing/subscribe", {"plan_id": plan_id})
+            if subscription:
+                st.success("Subscription updated.")
+    else:
+        st.info("No plans configured yet.")
+
+    st.subheader("Current subscription")
+    subscription = api_request("GET", "/billing/subscription")
+    if subscription:
+        st.json(subscription)
