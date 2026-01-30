@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, conint, confloat
 
@@ -145,7 +145,7 @@ class ProductivityEntryBase(TimestampBase):
 
 
 class ProductivityEntryCreate(ProductivityEntryBase):
-    pass
+    completed_task_ids: Optional[List[int]] = None  # link tasks_completed to real tasks
 
 
 class ProductivityEntryUpdate(BaseModel):
@@ -156,10 +156,28 @@ class ProductivityEntryUpdate(BaseModel):
     focus_level: Optional[conint(ge=1, le=10)] = None
     focus_category: Optional[str] = Field(default=None, max_length=64)
     notes: Optional[str] = None
+    completed_task_ids: Optional[List[int]] = None
 
 
 class ProductivityEntryRead(TimestampRead, ProductivityEntryBase):
     user_id: int
+    completed_task_ids: List[int] = Field(default_factory=list)
+
+
+# Productivity dashboard
+class FocusByCategoryItem(BaseModel):
+    category: str
+    hours: float
+
+
+class ProductivityDashboardResponse(BaseModel):
+    best_worst_weekday: list  # BestWorstWeekdayItem
+    trends_14: list
+    trends_30: list
+    session_deep_work_hours_total: Optional[float] = None
+    top_hours: Optional[List[int]] = None  # hour of day (0-23) with most focus sessions
+    focus_by_category: Optional[List[FocusByCategoryItem]] = None
+    insight: Optional[str] = None
 
 
 LEARNING_SOURCE_TYPES = ("book", "course", "podcast", "other")

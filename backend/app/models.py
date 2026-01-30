@@ -76,6 +76,17 @@ class FinanceEntry(Base, TimestampMixin):
     user = relationship("User", back_populates="finance_entries")
 
 
+class ProductivityEntryCompletedTask(Base):
+    """Link productivity entry to tasks completed that day (tasks_completed <-> real tasks)."""
+    __tablename__ = "productivity_entry_completed_tasks"
+
+    entry_id = Column(Integer, ForeignKey("productivity_entries.id", ondelete="CASCADE"), primary_key=True)
+    task_id = Column(Integer, ForeignKey("productivity_tasks.id", ondelete="CASCADE"), primary_key=True)
+
+    entry = relationship("ProductivityEntry", back_populates="completed_task_links")
+    task = relationship("ProductivityTask", back_populates="entry_links")
+
+
 class ProductivityEntry(Base, TimestampMixin):
     __tablename__ = "productivity_entries"
 
@@ -87,6 +98,15 @@ class ProductivityEntry(Base, TimestampMixin):
     notes = Column(String, nullable=True)
 
     user = relationship("User", back_populates="productivity_entries")
+    completed_task_links = relationship(
+        "ProductivityEntryCompletedTask",
+        back_populates="entry",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def completed_task_ids(self):
+        return [link.task_id for link in self.completed_task_links]
 
 
 class ProductivityTask(Base):
@@ -101,6 +121,11 @@ class ProductivityTask(Base):
     created_at = Column(DateTime(timezone=True), nullable=False)
 
     user = relationship("User", back_populates="productivity_tasks")
+    entry_links = relationship(
+        "ProductivityEntryCompletedTask",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )
 
 
 class FocusSession(Base):

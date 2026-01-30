@@ -12,22 +12,58 @@ from ..deps import get_current_user, get_db_session
 router = APIRouter(prefix="/productivity", tags=["productivity"])
 
 
+def _sync_completed_tasks(
+    db: Session,
+    entry: models.ProductivityEntry,
+    task_ids: Optional[List[int]],
+    user_id: int,
+) -> None:
+    """Sync productivity_entry_completed_tasks; validate task_ids belong to user."""
+    if task_ids is None:
+        return
+    # Remove existing links
+    db.query(models.ProductivityEntryCompletedTask).filter(
+        models.ProductivityEntryCompletedTask.entry_id == entry.id,
+    ).delete(synchronize_session=False)
+    if not task_ids:
+        return
+    # Validate and add links
+    tasks = (
+        db.query(models.ProductivityTask.id)
+        .filter(
+            models.ProductivityTask.user_id == user_id,
+            models.ProductivityTask.id.in_(task_ids),
+        )
+        .all()
+    )
+    valid_ids = {t.id for t in tasks}
+    for tid in task_ids:
+        if tid in valid_ids:
+            db.add(models.ProductivityEntryCompletedTask(entry_id=entry.id, task_id=tid))
+
+
 @router.post("", response_model=schemas.ProductivityEntryRead)
 def create_productivity(
     entry: schemas.ProductivityEntryCreate,
     db: Session = Depends(get_db_session),
     user=Depends(get_current_user),
 ):
+    tasks_completed = entry.tasks_completed
+    if entry.completed_task_ids is not None:
+        tasks_completed = len(entry.completed_task_ids)
     record = models.ProductivityEntry(
         user_id=user.id,
         deep_work_hours=entry.deep_work_hours,
-        tasks_completed=entry.tasks_completed,
+        tasks_completed=tasks_completed,
         focus_level=entry.focus_level,
         focus_category=entry.focus_category,
         notes=entry.notes,
     )
     apply_timestamp(record, entry.recorded_at, entry.timezone)
     db.add(record)
+    db.commit()
+    db.refresh(record)
+    _sync_completed_tasks(db, record, entry.completed_task_ids, user.id)
     db.commit()
     db.refresh(record)
     return record
@@ -71,6 +107,9 @@ def update_productivity(
     if not record:
         raise HTTPException(status_code=404, detail="Productivity entry not found")
     apply_update(record, payload)
+    if getattr(payload, "completed_task_ids", None) is not None:
+        _sync_completed_tasks(db, record, payload.completed_task_ids, user.id)
+        record.tasks_completed = len(record.completed_task_links)
     db.commit()
     db.refresh(record)
     return record

@@ -78,14 +78,19 @@
 
 - **Продуктивность (Productivity) — расширения**
   - Задачи: таблица `productivity_tasks`, CRUD API `/productivity/tasks` (title, status: open/done/cancelled, due_at); при смене статуса на done проставляется `completed_at`.
+  - Привязка «tasks_completed» к реальным задачам: таблица `productivity_entry_completed_tasks` (entry_id, task_id); при создании/обновлении записи продуктивности можно передать `completed_task_ids` — список ID задач, выполненных за день; в ответе запись содержит `completed_task_ids`; при передаче списка `tasks_completed` выставляется равным количеству привязанных задач.
   - Категория фокуса: поле `focus_category` в записях продуктивности (code / writing / meetings / other) для аналитики «на что уходит время».
-  - Сессии фокуса (Pomodoro/таймеры): таблица `focus_sessions`, `POST /productivity/sessions`, `GET /productivity/sessions` (duration_minutes, session_type: pomodoro/deep_work); агрегация по дате для отчётов.
+  - Сессии фокуса (Pomodoro/таймеры): таблица `focus_sessions`, `POST /productivity/sessions`, `GET /productivity/sessions` (duration_minutes, session_type: pomodoro/deep_work); агрегация по дате в часы глубокой работы.
+  - Агрегация сессий в часы глубокой работы: в дневной сводке (`build_daily_dataframe`) добавлены колонки `session_deep_work_hours` (сумма длительностей сессий по дню) и `total_deep_work_hours` (запись + сессии); еженедельный отчёт по продуктивности при наличии сессий включает `session_deep_work_total` и `total_deep_work_total`.
+  - Аналитика по категориям фокуса: агрегация записей по `focus_category` (сумма `deep_work_hours` по категории) — «на что уходит время».
+  - Дашборд продуктивности: `GET /analytics/productivity-dashboard` — лучшие/худшие дни по глубокой работе (в т.ч. `total_deep_work_hours`), тренды 14/30 дней, суммарные часы из сессий, лучшие часы дня по сессиям фокуса (`top_hours`), разбивка по категориям фокуса (`focus_by_category`), один инсайт (связь с сном/обучением из существующих рекомендаций).
 
 - **Напоминания**
   - API напоминаний: `GET /reminders` — список напоминаний (тип, should_remind, message); напоминание «заполни здоровье за вчера» при отсутствии записи за вчера.
 
-- **Миграция**
+- **Миграции**
   - `0007_health_learning_productivity_extensions`: health (entry_type, steps, heart_rate_avg, workout_minutes), learning_courses + course_id/source_type в learning_entries, productivity_tasks + focus_category в productivity_entries, focus_sessions.
+  - `0008_productivity_entry_completed_tasks`: таблица связи записей продуктивности с выполненными задачами (entry_id, task_id).
 
 - **Интеграции и биллинг (заготовки)**
   - Интеграции: список провайдеров, подключение, синхронизация (Google Fit, Apple Health, Open Banking); модели источников и заданий синхронизации, хранение токенов; баннер «OAuth coming soon».

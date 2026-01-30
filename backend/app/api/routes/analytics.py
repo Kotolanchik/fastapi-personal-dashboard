@@ -162,3 +162,25 @@ def weekday_trends(
     payload = analytics.weekday_and_trends_payload(df)
     set_json(cache_key, payload, settings.cache_ttl_seconds)
     return payload
+
+
+@router.get("/productivity-dashboard", response_model=schemas.ProductivityDashboardResponse)
+def productivity_dashboard(
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    """Best days/hours, focus by category, link to sleep/learning (insight)."""
+    settings = get_settings()
+    cache_key = f"productivity_dashboard:{user.id}"
+    cached = get_json(cache_key)
+    if cached:
+        return cached
+
+    goals_objs = list_goals(db, user.id)
+    goals = [
+        {"sphere": g.sphere, "title": g.title, "target_value": g.target_value, "target_metric": g.target_metric}
+        for g in goals_objs
+    ]
+    payload = analytics.productivity_dashboard_payload(db, user_id=user.id, goals=goals)
+    set_json(cache_key, payload, settings.cache_ttl_seconds)
+    return payload

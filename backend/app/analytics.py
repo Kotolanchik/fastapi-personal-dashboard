@@ -91,6 +91,36 @@ def build_daily_dataframe(db, user_id: int | None = None) -> pd.DataFrame:
         ["deep_work_hours", "tasks_completed", "focus_level"],
         sum_fields=["deep_work_hours", "tasks_completed"],
     )
+    # Aggregate focus_sessions (Pomodoro/timers) into session_deep_work_hours; combine with entry deep_work_hours
+    if user_id is not None:
+        focus_sessions = (
+            db.query(models.FocusSession)
+            .filter(models.FocusSession.user_id == user_id)
+            .all()
+        )
+    else:
+        focus_sessions = db.query(models.FocusSession).all()
+    if focus_sessions:
+        sessions_rows = [{"date": s.local_date, "duration_minutes": s.duration_minutes} for s in focus_sessions]
+        sessions_df = (
+            pd.DataFrame(sessions_rows)
+            .groupby("date", as_index=False)["duration_minutes"]
+            .sum()
+        )
+        sessions_df["session_deep_work_hours"] = sessions_df["duration_minutes"] / 60.0
+        sessions_df = sessions_df[["date", "session_deep_work_hours"]]
+        if not productivity_df.empty:
+            productivity_df = productivity_df.merge(sessions_df, on="date", how="outer")
+        else:
+            productivity_df = sessions_df.copy()
+            productivity_df["deep_work_hours"] = 0.0
+            productivity_df["tasks_completed"] = 0
+            productivity_df["focus_level"] = 0.0
+        productivity_df["session_deep_work_hours"] = productivity_df["session_deep_work_hours"].fillna(0)
+        productivity_df["total_deep_work_hours"] = (
+            productivity_df["deep_work_hours"].fillna(0) + productivity_df["session_deep_work_hours"]
+        )
+
     learning_df = _entries_to_df(
         learning_entries,
         ["study_hours"],
@@ -541,11 +571,16 @@ def weekly_digest(df: pd.DataFrame, period_start: date, period_end: date) -> dic
                 "expense_total": round(float(df[expense_cols].sum().sum()), 0) if expense_cols else 0,
             }
         if "deep_work_hours" in df.columns:
-            summary["productivity"] = {
+            prod = {
                 "deep_work_total": round(float(df["deep_work_hours"].sum()), 1),
                 "tasks_total": int(df["tasks_completed"].sum()) if "tasks_completed" in df.columns else None,
                 "focus_avg": round(float(df["focus_level"].mean()), 1) if "focus_level" in df.columns else None,
             }
+            if "session_deep_work_hours" in df.columns:
+                prod["session_deep_work_total"] = round(float(df["session_deep_work_hours"].sum()), 1)
+            if "total_deep_work_hours" in df.columns:
+                prod["total_deep_work_total"] = round(float(df["total_deep_work_hours"].sum()), 1)
+            summary["productivity"] = prod
         if "study_hours" in df.columns:
             summary["learning"] = {
                 "study_total": round(float(df["study_hours"].sum()), 1),
@@ -564,3 +599,69 @@ def weekly_digest(df: pd.DataFrame, period_start: date, period_end: date) -> dic
         "insight": insight,
         "generated_at": datetime.utcnow(),
     }
+
+
+def focus_by_category(db, user_id: int) -> List[dict]:
+    """Aggregate productivity entries by focus_category (sum deep_work_hours). 'На что уходит время'."""
+    from sqlalchemy import func
+
+    rows = (
+        db.query(models.ProductivityEntry.focus_category, func.sum(models.ProductivityEntry.deep_work_hours).label("hours"))
+        .filter(
+            models.ProductivityEntry.user_id == user_id,
+            models.ProductivityEntry.focus_category.isnot(None),
+            models.ProductivityEntry.focus_category != "",
+        )
+        .group_by(models.ProductivityEntry.focus_category)
+        .all()
+    )
+    return [{"category": str(cat), "hours": round(float(h), 1)} for cat, h in rows]
+
+
+def productivity_dashboard_payload(db, user_id: int, goals: List[dict] | None = None) -> dict:
+    """Best days/hours, focus by category, link to sleep/learning (insight)."""
+    df = build_daily_dataframe(db, user_id=user_id)
+    payload = weekday_and_trends_payload(df)
+    # Add total_deep_work_hours (entries + sessions) when available
+    if "total_deep_work_hours" in df.columns:
+        bw = best_worst_weekday(df, "total_deep_work_hours", higher_is_better=True)
+        if bw:
+            payload["best_worst_weekday"].append(bw)
+        for d in (14, 30):
+            t = linear_trend(df, "total_deep_work_hours", days=d)
+            if t:
+                payload[f"trends_{d}"].append(t)
+
+    # Session deep work total (Pomodoro/timers aggregated)
+    session_total = None
+    if "session_deep_work_hours" in df.columns:
+        session_total = round(float(df["session_deep_work_hours"].sum()), 1)
+    payload["session_deep_work_hours_total"] = session_total
+
+    # Top hours of day (when user has most focus sessions; hour in UTC from recorded_at)
+    focus_sessions = (
+        db.query(models.FocusSession.recorded_at)
+        .filter(models.FocusSession.user_id == user_id)
+        .all()
+    )
+    if focus_sessions:
+        from collections import Counter
+        hours = []
+        for (recorded_at,) in focus_sessions:
+            if recorded_at is not None:
+                h = recorded_at.hour if hasattr(recorded_at, "hour") else recorded_at.replace(tzinfo=None).hour
+                hours.append(h)
+        if hours:
+            counts = Counter(hours)
+            top = sorted(counts.keys(), key=lambda h: (-counts[h], h))[:5]
+            payload["top_hours"] = top
+
+    # Focus by category
+    by_cat = focus_by_category(db, user_id)
+    if by_cat:
+        payload["focus_by_category"] = by_cat
+
+    # One insight (sleep/productivity or recommendation)
+    payload["insight"] = insight_of_the_week(df, goals=goals or [])
+
+    return payload
