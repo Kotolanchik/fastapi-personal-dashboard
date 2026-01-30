@@ -61,6 +61,9 @@ alembic/                  # миграции приложения
 alembic.ini               # Alembic конфиг
 frontend/
   app.py                  # Streamlit UI
+frontend-react/
+  src/                    # React UI (TypeScript)
+  .env.example            # Vite env
 etl/
   export.py               # экспорт CSV
 dwh/
@@ -93,6 +96,8 @@ deploy/helm/personal-dashboard/ # Helm chart
 docker-compose.yml        # локальная разработка
 docker-compose.prod.yml   # production‑схема
 docker-compose.managed.yml # managed Postgres/Redis
+docker-compose.react.yml  # React + backend
+Dockerfile.frontend-react # React production image
 .env.example              # пример окружения
 .env.prod.example         # окружение для продакшена
 Makefile                  # команды для быстрого запуска
@@ -110,12 +115,28 @@ uvicorn backend.app.main:app --reload --port 8000
 streamlit run frontend/app.py
 ```
 
+### React UI (рекомендуем)
+
+```bash
+cd frontend-react
+npm install
+npm run dev
+```
+
+Откройте http://localhost:5173 для React‑интерфейса.
+
 Откройте http://localhost:8501, зарегистрируйтесь и войдите.
 
 ## Быстрый старт (Docker)
 
 ```bash
 docker compose up --build
+```
+
+### React + Backend (Docker)
+
+```bash
+docker compose -f docker-compose.react.yml up --build
 ```
 
 ## Быстрый старт (Makefile)
@@ -199,6 +220,9 @@ UPDATE users SET role='admin' WHERE email='admin@example.com';
 
 **Frontend:**
 - `API_URL` (по умолчанию `http://localhost:8000`)
+
+**React frontend (Vite):**
+- `VITE_API_URL` (по умолчанию `http://localhost:8000`)
 
 **DWH:**
 - `DWH_DATABASE_URL` (по умолчанию `sqlite:///./data/dwh.db`)
