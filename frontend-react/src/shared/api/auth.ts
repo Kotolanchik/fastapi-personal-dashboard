@@ -4,6 +4,7 @@ export type User = {
   id: number
   email: string
   full_name?: string | null
+  default_timezone?: string | null
   role: string
 }
 
@@ -22,3 +23,13 @@ export const loginUser = (payload: { email: string; password: string }) =>
   api.post<LoginResponse>('/auth/login', payload).then((res) => res.data)
 
 export const getCurrentUser = () => api.get<User>('/auth/me').then((res) => res.data)
+
+export const updateProfile = (payload: {
+  full_name?: string | null
+  default_timezone?: string | null
+}) => api.patch<User>('/auth/me', payload).then((res) => res.data)
+
+export const changePassword = (payload: {
+  current_password: string
+  new_password: string
+}) => api.post('/auth/change-password', payload)

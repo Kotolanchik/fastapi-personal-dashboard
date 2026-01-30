@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Line,
@@ -9,6 +10,8 @@ import {
 } from 'recharts'
 
 import { getCorrelations, getInsights, getRecommendations } from '../../shared/api/analytics'
+import { downloadCsv, type ExportCategory } from '../../shared/api/export'
+import { useToast } from '../../shared/components/Toast'
 import {
   type FinanceEntry,
   type HealthEntry,
@@ -45,7 +48,18 @@ const toLearningChart = (data: LearningEntry[]) =>
     study: entry.study_hours,
   }))
 
+const EXPORT_OPTIONS: { value: ExportCategory; label: string }[] = [
+  { value: 'daily', label: 'Daily summary' },
+  { value: 'all', label: 'All data' },
+  { value: 'health', label: 'Health' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'productivity', label: 'Productivity' },
+  { value: 'learning', label: 'Learning' },
+]
+
 export const DashboardPage = () => {
+  const toast = useToast()
+  const [exporting, setExporting] = useState(false)
   const health = useQuery({
     queryKey: ['health'],
     queryFn: () => fetchEntries<HealthEntry>('health'),
@@ -75,8 +89,74 @@ export const DashboardPage = () => {
     queryFn: getRecommendations,
   })
 
+  const isLoading =
+    health.isLoading ||
+    finance.isLoading ||
+    productivity.isLoading ||
+    learning.isLoading ||
+    correlations.isLoading ||
+    insights.isLoading ||
+    recommendations.isLoading
+
+  if (isLoading) {
+    return (
+      <div className="stack">
+        <section className="grid cards">
+          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton metric-skeleton" /></div>
+        </section>
+        <section className="grid charts">
+          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton chart-skeleton" /></div>
+        </section>
+        <section className="grid columns">
+          <div className="card skeleton-card"><div className="skeleton list-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton list-skeleton" /></div>
+          <div className="card skeleton-card"><div className="skeleton list-skeleton" /></div>
+        </section>
+      </div>
+    )
+  }
+
+  const [exportCategory, setExportCategory] = useState<ExportCategory>('all')
+  const handleDownloadCsv = async () => {
+    setExporting(true)
+    try {
+      await downloadCsv(exportCategory)
+      toast.success('CSV downloaded.')
+    } catch {
+      toast.error('Download failed.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="stack">
+      <div className="card export-bar">
+        <h3>Export data</h3>
+        <p className="muted">Download your entries as CSV.</p>
+        <div className="export-actions">
+          <select
+            value={exportCategory}
+            onChange={(e) => setExportCategory(e.target.value as ExportCategory)}
+            aria-label="Export category"
+          >
+            {EXPORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <button type="button" disabled={exporting} onClick={handleDownloadCsv}>
+            {exporting ? '…' : 'Download CSV'}
+          </button>
+        </div>
+      </div>
       <section className="grid cards">
         <div className="card">
           <h4>Sleep avg</h4>
@@ -176,7 +256,7 @@ export const DashboardPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="muted">Нет данных для корреляций.</p>
+            <p className="muted">No data for correlations yet.</p>
           )}
         </div>
         <div className="card">
@@ -188,7 +268,7 @@ export const DashboardPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="muted">Нет инсайтов.</p>
+            <p className="muted">No insights yet.</p>
           )}
         </div>
         <div className="card">
@@ -200,7 +280,7 @@ export const DashboardPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="muted">Нет рекомендаций.</p>
+            <p className="muted">No recommendations yet.</p>
           )}
         </div>
       </section>

@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { getSubscription, listPlans, subscribePlan } from '../../shared/api/billing'
+import { useToast } from '../../shared/components/Toast'
 
 export const BillingPage = () => {
   const queryClient = useQueryClient()
+  const toast = useToast()
   const plans = useQuery({ queryKey: ['plans'], queryFn: listPlans })
   const subscription = useQuery({
     queryKey: ['subscription'],
@@ -13,13 +15,16 @@ export const BillingPage = () => {
 
   const subscribeMutation = useMutation({
     mutationFn: (planId: number) => subscribePlan(planId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subscription'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription'] })
+      toast.success('Subscribed successfully.')
+    },
   })
 
   return (
     <div className="stack">
       <div className="card">
-        <h3>Доступные планы</h3>
+        <h3>Available plans</h3>
         {plans.data?.length ? (
           <div className="grid cards">
             {plans.data.map((plan) => (
@@ -29,18 +34,18 @@ export const BillingPage = () => {
                   {plan.price_monthly} {plan.currency}
                 </p>
                 <button onClick={() => subscribeMutation.mutate(plan.id)}>
-                  Подписаться
+                  Subscribe
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <p className="muted">Планы не настроены.</p>
+          <p className="muted">No plans configured.</p>
         )}
       </div>
 
       <div className="card">
-        <h3>Текущая подписка</h3>
+        <h3>Current subscription</h3>
         {subscription.data ? (
           <div className="list">
             <p>Plan ID: {subscription.data.plan_id}</p>
@@ -48,7 +53,7 @@ export const BillingPage = () => {
             <p>Started: {subscription.data.started_at}</p>
           </div>
         ) : (
-          <p className="muted">Подписка не найдена.</p>
+          <p className="muted">No subscription found.</p>
         )}
       </div>
     </div>

@@ -28,6 +28,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
+    default_timezone = Column(String(64), nullable=True, server_default="UTC")
     created_at = Column(DateTime(timezone=True), nullable=False)
     role = Column(String(32), nullable=False, default="user")
 

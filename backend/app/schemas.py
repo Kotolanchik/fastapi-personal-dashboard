@@ -139,11 +139,22 @@ class UserLogin(BaseModel):
 
 class UserRead(UserBase):
     id: int
+    default_timezone: Optional[str] = "UTC"
     created_at: datetime
     role: str
 
     class Config:
         orm_mode = True
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = Field(default=None, max_length=255)
+    default_timezone: Optional[str] = Field(default=None, max_length=64)
+
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class Token(BaseModel):

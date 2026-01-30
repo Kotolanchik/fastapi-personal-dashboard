@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { createEntry, deleteEntry, fetchEntries, updateEntry } from '../../shared/api/entries'
+import { useToast } from '../../shared/components/Toast'
+import { parseValidationErrors } from '../../shared/utils/validation'
 
 type FieldConfig = {
   name: string
@@ -21,7 +23,8 @@ type EntriesPageProps = {
 
 export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
   const queryClient = useQueryClient()
-  const { data = [] } = useQuery({
+  const toast = useToast()
+  const { data = [], isLoading } = useQuery({
     queryKey: [resource],
     queryFn: () => fetchEntries<Record<string, unknown>>(resource),
   })
@@ -31,6 +34,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
   const [time, setTime] = useState('08:00')
   const [timezone, setTimezone] = useState('UTC')
   const [form, setForm] = useState<Record<string, string>>({})
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const resetForm = () => {
     setEditing(null)
@@ -38,6 +42,7 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
     setTime('08:00')
     setTimezone('UTC')
     setForm({})
+    setFieldErrors({})
   }
 
   const mutation = useMutation({
@@ -47,9 +52,13 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
       }
       return createEntry(resource, payload.body)
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [resource] })
       resetForm()
+      toast.success(variables.id ? 'Saved.' : 'Added.')
+    },
+    onError: (err) => {
+      setFieldErrors(parseValidationErrors(err))
     },
   })
 
@@ -114,19 +123,37 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
   return (
     <div className="stack">
       <div className="card">
-        <h3>{editing ? 'Обновить запись' : `Новая запись: ${title}`}</h3>
-        <form onSubmit={handleSubmit} className="form-grid">
+        <h3>{editing ? 'Update entry' : `New entry: ${title}`}</h3>
+        <form id="entry-form" onSubmit={handleSubmit} className="form-grid">
           <label>
-            Дата
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            Date
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => {
+                setDate(e.target.value)
+                setFieldErrors((prev) => ({ ...prev, recorded_at: undefined }))
+              }}
+              required
+              aria-invalid={!!fieldErrors.recorded_at}
+            />
+            {fieldErrors.recorded_at ? <div className="field-error">{fieldErrors.recorded_at}</div> : null}
           </label>
           <label>
-            Время
+            Time
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </label>
           <label>
-            Таймзона
-            <input value={timezone} onChange={(e) => setTimezone(e.target.value)} />
+            Timezone
+            <input
+              value={timezone}
+              onChange={(e) => {
+                setTimezone(e.target.value)
+                setFieldErrors((prev) => ({ ...prev, timezone: undefined }))
+              }}
+              aria-invalid={!!fieldErrors.timezone}
+            />
+            {fieldErrors.timezone ? <div className="field-error">{fieldErrors.timezone}</div> : null}
           </label>
           {fields.map((field) => (
             <label key={field.name}>
@@ -137,17 +164,22 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
                 max={field.max}
                 step={field.step ?? (field.type === 'int' ? 1 : 0.1)}
                 value={form[field.name] ?? ''}
-                onChange={(e) => setForm((prev) => ({ ...prev, [field.name]: e.target.value }))}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, [field.name]: e.target.value }))
+                  setFieldErrors((prev) => ({ ...prev, [field.name]: undefined }))
+                }}
+                aria-invalid={!!fieldErrors[field.name]}
               />
+              {fieldErrors[field.name] ? <div className="field-error">{fieldErrors[field.name]}</div> : null}
             </label>
           ))}
           <div className="form-actions">
             <button type="submit" disabled={mutation.isPending}>
-              {editing ? 'Сохранить' : 'Добавить'}
+              {editing ? 'Save' : 'Add'}
             </button>
             {editing ? (
               <button type="button" className="secondary" onClick={resetForm}>
-                Отмена
+                Cancel
               </button>
             ) : null}
           </div>
@@ -155,8 +187,16 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
       </div>
 
       <div className="card">
-        <h3>Записи</h3>
-        {data.length ? (
+        <h3>Entries</h3>
+        {isLoading ? (
+          <div className="skeleton-list" aria-busy="true">
+            <div className="skeleton-row" />
+            <div className="skeleton-row" />
+            <div className="skeleton-row" />
+            <div className="skeleton-row" />
+            <div className="skeleton-row" />
+          </div>
+        ) : data.length ? (
           <table>
             <thead>
               <tr>
@@ -186,7 +226,13 @@ export const EntriesPage = ({ title, resource, fields }: EntriesPageProps) => {
             </tbody>
           </table>
         ) : (
-          <p className="muted">Записей пока нет.</p>
+          <div className="empty-state">
+            <p className="empty-state-text">No entries yet.</p>
+            <p className="muted">Add your first entry to start tracking.</p>
+            <a href="#entry-form" className="empty-state-cta">
+              Add your first entry
+            </a>
+          </div>
         )}
       </div>
     </div>

@@ -8,7 +8,7 @@ import {
 } from 'react'
 
 import { getCurrentUser, loginUser, registerUser, type User } from '../../shared/api/auth'
-import { setAuthToken } from '../../shared/api/client'
+import { setAuthToken, setOnUnauthorized } from '../../shared/api/client'
 
 type AuthContextValue = {
   user: User | null
@@ -17,6 +17,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, fullName?: string) => Promise<void>
   logout: () => void
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -77,9 +78,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setAuthToken(null)
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    const t = token ?? localStorage.getItem('token')
+    if (t) await loadUser(t)
+  }, [token, loadUser])
+
+  useEffect(() => {
+    setOnUnauthorized(logout)
+    return () => setOnUnauthorized(null)
+  }, [logout])
+
   const value = useMemo(
-    () => ({ user, token, isLoading, login, register, logout }),
-    [user, token, isLoading, login, register, logout],
+    () => ({ user, token, isLoading, login, register, logout, refreshUser }),
+    [user, token, isLoading, login, register, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

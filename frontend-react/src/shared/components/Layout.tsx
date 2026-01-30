@@ -1,15 +1,17 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../../features/auth/AuthContext'
+import { Footer } from './Footer'
 
 const navItems = [
-  { to: '/', label: 'Dashboard' },
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/health', label: 'Health' },
   { to: '/finance', label: 'Finance' },
   { to: '/productivity', label: 'Productivity' },
   { to: '/learning', label: 'Learning' },
   { to: '/integrations', label: 'Integrations' },
   { to: '/billing', label: 'Billing' },
+  { to: '/settings', label: 'Settings' },
 ]
 
 export const Layout = () => {
@@ -18,10 +20,12 @@ export const Layout = () => {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-title">Personal Dashboard</div>
-          <div className="brand-subtitle">Life analytics</div>
-        </div>
+        <Link to="/dashboard" className="brand-link">
+          <div className="brand">
+            <div className="brand-title">LifePulse</div>
+            <div className="brand-subtitle">Life analytics</div>
+          </div>
+        </Link>
         <nav className="nav">
           {navItems.map((item) => (
             <NavLink
@@ -37,16 +41,17 @@ export const Layout = () => {
       <main className="main">
         <header className="topbar">
           <div>
-            <h2>Привет, {user?.full_name || user?.email}</h2>
-            <p className="muted">Роль: {user?.role ?? 'user'}</p>
+            <h2>Hello, {user?.full_name || user?.email}</h2>
+            <p className="muted">Role: {user?.role ?? 'user'}</p>
           </div>
           <button onClick={logout} className="secondary">
-            Выйти
+            Sign out
           </button>
         </header>
         <section className="content">
           <Outlet />
         </section>
+        <Footer />
       </main>
     </div>
   )

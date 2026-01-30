@@ -3,6 +3,7 @@ import { ReactNode } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 
 import { AuthProvider } from '../features/auth/AuthContext'
+import { ToastProvider } from '../shared/components/Toast'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,7 +16,9 @@ const queryClient = new QueryClient({
 export const AppProviders = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <BrowserRouter>{children}</BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   </QueryClientProvider>
 )

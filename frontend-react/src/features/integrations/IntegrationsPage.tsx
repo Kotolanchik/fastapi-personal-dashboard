@@ -44,12 +44,12 @@ export const IntegrationsPage = () => {
   return (
     <div className="stack">
       <div className="card">
-        <h3>Подключить интеграцию</h3>
+        <h3>Connect integration</h3>
         <div className="form-grid">
           <label>
-            Провайдер
+            Provider
             <select value={provider} onChange={(e) => setProvider(e.target.value)}>
-              <option value="">Выберите...</option>
+              <option value="">Select...</option>
               {providerOptions.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -77,13 +77,13 @@ export const IntegrationsPage = () => {
             onClick={() => connectMutation.mutate()}
             disabled={!provider || connectMutation.isPending}
           >
-            Сохранить
+            Save
           </button>
         </div>
       </div>
 
       <div className="card">
-        <h3>Источники данных</h3>
+        <h3>Data sources</h3>
         {sources.data?.length ? (
           <table>
             <thead>
@@ -110,12 +110,12 @@ export const IntegrationsPage = () => {
             </tbody>
           </table>
         ) : (
-          <p className="muted">Нет подключенных источников.</p>
+          <p className="muted">No connected sources.</p>
         )}
       </div>
 
       <div className="card">
-        <h3>История синхронизации</h3>
+        <h3>Sync history</h3>
         {jobs.data?.length ? (
           <table>
             <thead>
@@ -138,7 +138,7 @@ export const IntegrationsPage = () => {
             </tbody>
           </table>
         ) : (
-          <p className="muted">Нет историй синхронизации.</p>
+          <p className="muted">No sync history.</p>
         )}
       </div>
     </div>

@@ -40,3 +40,33 @@ def set_user_role(db: Session, user: models.User, role: str) -> models.User:
     db.commit()
     db.refresh(user)
     return user
+
+
+def update_user_profile(
+    db: Session,
+    user: models.User,
+    *,
+    full_name: Optional[str] = None,
+    default_timezone: Optional[str] = None,
+) -> models.User:
+    if full_name is not None:
+        user.full_name = full_name
+    if default_timezone is not None:
+        user.default_timezone = default_timezone
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def change_password(
+    db: Session,
+    user: models.User,
+    current_password: str,
+    new_password: str,
+) -> Optional[models.User]:
+    if not verify_password(current_password, user.hashed_password):
+        return None
+    user.hashed_password = hash_password(new_password)
+    db.commit()
+    db.refresh(user)
+    return user
