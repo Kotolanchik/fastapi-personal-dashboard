@@ -1,80 +1,122 @@
-# Changelog
+# История изменений
 
-All notable changes to the project are documented in this file.
+Все значимые изменения проекта документируются в этом файле.
 
-## [Unreleased]
-
-### Added
-
-- **Analytics & insights (2.5)**  
-  - **analytics.py**: Best/worst weekday for sleep and productivity (aggregation by weekday); linear trend over last 14/30 days for sleep, expenses, deep work; new insights: expenses grow faster than income, sleep worse after weekends (Monday vs rest), focus higher on days with ≥6h sleep; `trend_this_month()` (this month vs previous, ↑/↓); `insight_of_the_week()`; `weekday_and_trends_payload()` (best/worst weekday + trends_14/trends_30).  
-  - **recommender.py**: Rules for expenses vs income trend (30-day slope), sleep worse after weekends (Monday), focus higher on days with ≥6h sleep.  
-  - **API**: `GET /analytics/trend-this-month`, `GET /analytics/insight-of-the-week`, `GET /analytics/weekday-trends`; schemas TrendThisMonthResponse, InsightOfTheWeekResponse, WeekdayTrendsResponse.  
-  - **Dashboard**: Block «Trend this month» (↑/↓ key metrics); «Insight of the week» above existing insights; «Last week in numbers» card with link to weekly report; «By weekday & recent trends» (best/worst weekday, 14/30-day trend directions).  
-  - **Weekly report**: Page titled «Last week in numbers» (sums, averages, one insight); explicit link from dashboard.
-
-- **Goals (2.1)**  
-  - Backend: `user_goals` table, CRUD API `/goals`, progress computation (current vs target per sphere).  
-  - Frontend: Goals in Settings (add/remove up to 2 goals), Goals progress block on Dashboard.  
-  - Migration: `0005_add_user_goals.py`.
-
-- **Onboarding (2.2)**  
-  - Short first-run flow on Dashboard: modal explaining what the dashboard is (health, finance, productivity, learning) and suggesting to add the first entry (link to Health).  
-  - Dismissal stored in `localStorage` (`lifepulse_onboarding_completed`).
-
-- **Recommendations (2.3)**  
-  - Extended `recommender.py`: more rules (low sleep, study consistency, focus vs deep work, income vs expenses), goal-aware recommendations (progress toward user goals).  
-  - Analytics route passes user goals into recommender; cache key unchanged.
-
-- **Weekly report (2.4)**  
-  - Backend: `GET /analytics/weekly-report` — digest for last 7 days: summary by spheres (health, finance, productivity, learning) + one insight.  
-  - Frontend: Weekly report page and nav link; displays period, sphere metrics, and insight.
+Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).  
+Версии следуют [Semantic Versioning](https://semver.org/lang/ru/).
 
 ---
 
-## Previous implementations (pre-changelog)
+## [Не выпущено]
 
-- **MVP core**  
-  - Manual data entry for 4 life spheres: Health, Finance, Productivity, Learning.  
-  - CRUD for entries (create, list, update, delete) with date/timezone support.  
-  - Dashboards and time-series charts (Recharts) for each sphere.  
-  - Export to CSV (daily summary, all data, per category).
+### Добавлено
 
-- **Analytics**  
-  - Correlations between numeric metrics (Pandas).  
-  - Insights (sleep vs productivity, sleep vs energy, finance vs wellbeing).  
-  - Rule-based recommendations (sleep–energy, deep work–wellbeing, food spend–wellbeing).  
-  - Optional Redis caching for correlations, insights, recommendations.
+- **Напоминание о неактивности**  
+  При входе на дашборд проверяется давность последней записи (по всем сферам). Если записей нет или последняя старше 3 дней — показывается модальное окно: «You haven't logged in X days. Log today?» с кнопками «Log today» (переход в форму Health) и «Later» (скрыть до конца сессии).
 
-- **Auth & users**  
-  - JWT authentication (register, login, `/auth/me`).  
-  - Profile update (name, default timezone) and change password.  
-  - RBAC: `user` and `admin` roles; admin endpoints under `/admin/*`.
+---
 
-- **Integrations (scaffold)**  
-  - Providers list, connect, sync (Google Fit, Apple Health, Open Banking).  
-  - Data sources and sync jobs models; token storage.
+## [2.5.0]
 
-- **Billing (scaffold)**  
-  - Plans and subscriptions models; subscribe and subscription endpoints.  
-  - Billing page in React.
+### Добавлено
 
-- **Frontend**  
-  - React (Vite, TypeScript), TanStack Query, React Router.  
-  - Landing, Login, Register, Dashboard, Health/Finance/Productivity/Learning pages, Integrations, Billing, Settings.  
-  - Layout with sidebar nav, API error banner, toasts.  
-  - Legal: Privacy and Terms pages.
+- **Аналитика и инсайты (расширение)**
+  - **analytics.py**: лучший/худший день недели по сну и продуктивности (агрегация по weekday); линейный тренд за 14/30 дней по сну, расходам, глубокой работе; новые инсайты: «расходы растут быстрее дохода», «после выходных сон хуже», «фокус выше в дни с ≥6 ч сна»; `trend_this_month()`, `insight_of_the_week()`, `weekday_and_trends_payload()`.
+  - **recommender.py**: правила по тренду расходов vs дохода (30 дней), сон после выходных, фокус при ≥6 ч сна.
+  - **API**: `GET /analytics/trend-this-month`, `GET /analytics/insight-of-the-week`, `GET /analytics/weekday-trends`; схемы TrendThisMonthResponse, InsightOfTheWeekResponse, WeekdayTrendsResponse.
+  - **Дашборд**: блок «Trend this month» (↑/↓ по ключевым метрикам); «Insight of the week» поверх инсайтов; карточка «Last week in numbers» со ссылкой на еженедельный отчёт; блок «By weekday & recent trends».
+  - **Еженедельный отчёт**: страница «Last week in numbers» (суммы, средние, один инсайт); явная ссылка с дашборда.
 
-- **Backend**  
-  - FastAPI, SQLAlchemy, Alembic.  
-  - SQLite/Postgres; optional Redis.  
-  - Migrations: app schema, roles, integrations & billing, default timezone.
+---
 
-- **DWH & data**  
-  - DWH schema (Alembic), Parquet export, DuckDB build, dbt models (finance/health summary).  
-  - ETL and export utilities.
+## [2.4.0]
 
-- **DevOps**  
-  - Docker Compose (dev, prod, managed Postgres/Redis), Dockerfiles (backend, frontend, React).  
-  - Kubernetes manifests and Helm chart.  
-  - CI (e.g. pytest) and Docker publish workflow.
+### Добавлено
+
+- **Еженедельный отчёт**
+  - Backend: `GET /analytics/weekly-report` — дайджест за последние 7 дней: сводка по сферам (здоровье, финансы, продуктивность, обучение) и один инсайт.
+  - Frontend: страница «Weekly report» и пункт в навигации; отображаются период, метрики по сферам и инсайт.
+
+---
+
+## [2.3.0]
+
+### Добавлено
+
+- **Рекомендации (расширение)**
+  - Расширен `recommender.py`: дополнительные правила (низкий сон, регулярность обучения, фокус vs глубокая работа, доходы vs расходы), рекомендации с учётом целей пользователя.
+  - Маршрут аналитики передаёт цели пользователя в recommender; ключ кэша без изменений.
+
+---
+
+## [2.2.0]
+
+### Добавлено
+
+- **Онбординг**
+  - Краткий сценарий первого запуска на дашборде: модальное окно с объяснением (здоровье, финансы, продуктивность, обучение) и предложением добавить первую запись (ссылка на Health).
+  - Закрытие сохраняется в `localStorage` (`lifepulse_onboarding_completed`).
+
+---
+
+## [2.1.0]
+
+### Добавлено
+
+- **Цели**
+  - Backend: таблица `user_goals`, CRUD API `/goals`, расчёт прогресса (текущее значение vs цель по сфере).
+  - Frontend: управление целями в Настройках (до 2 целей), блок «Goals progress» на дашборде.
+  - Миграция: `0005_add_user_goals.py`.
+
+---
+
+## [2.0.0]
+
+Базовая версия продукта (до введения нумерованного changelog).
+
+### Добавлено
+
+- **Ядро MVP**
+  - Ручной ввод данных по четырём сферам: Здоровье, Финансы, Продуктивность, Обучение.
+  - CRUD для записей (создание, список, обновление, удаление) с поддержкой даты и часового пояса.
+  - Дашборды и графики временных рядов (Recharts) по каждой сфере.
+  - Экспорт в CSV (дневная сводка, все данные, по категориям).
+
+- **Аналитика**
+  - Корреляции между числовыми метриками (Pandas).
+  - Инсайты: сон vs продуктивность, сон vs энергия, финансы vs самочувствие.
+  - Правила рекомендаций: сон–энергия, глубокая работа–самочувствие, траты на еду–самочувствие.
+  - Опциональное кэширование в Redis для корреляций, инсайтов и рекомендаций.
+
+- **Аутентификация и пользователи**
+  - JWT (регистрация, вход, `/auth/me`).
+  - Обновление профиля (имя, часовой пояс по умолчанию), смена пароля.
+  - Роли `user` и `admin`; админ-эндпоинты в `/admin/*`.
+
+- **Интеграции (заготовка)**
+  - Список провайдеров, подключение, синхронизация (Google Fit, Apple Health, Open Banking).
+  - Модели источников данных и заданий синхронизации, хранение токенов.
+
+- **Биллинг (заготовка)**
+  - Модели планов и подписок, эндпоинты subscribe и subscription.
+  - Страница Billing в React.
+
+- **Frontend**
+  - React (Vite, TypeScript), TanStack Query, React Router.
+  - Landing, Login, Register, Dashboard, страницы Health / Finance / Productivity / Learning, Integrations, Billing, Settings.
+  - Layout с боковой навигацией, баннер ошибок API, тосты.
+  - Юридические страницы: Privacy и Terms.
+
+- **Backend**
+  - FastAPI, SQLAlchemy, Alembic.
+  - SQLite / Postgres; опционально Redis.
+  - Миграции: схема приложения, роли, интеграции и биллинг, часовой пояс по умолчанию.
+
+- **DWH и данные**
+  - Схема DWH (Alembic), экспорт в Parquet, сборка DuckDB, dbt-модели (сводки по финансам и здоровью).
+  - ETL и утилиты экспорта.
+
+- **DevOps**
+  - Docker Compose (dev, prod, managed Postgres/Redis), Dockerfile для backend, frontend и React.
+  - Манифесты Kubernetes и Helm chart.
+  - CI (pytest), workflow публикации Docker-образов.

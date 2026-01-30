@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { OnboardingModal, isOnboardingCompleted } from '../onboarding/OnboardingModal'
+import { InactiveReminderModal, wasInactiveReminderDismissed } from './InactiveReminderModal'
 import {
   Line,
   LineChart,
@@ -72,10 +73,35 @@ const EXPORT_OPTIONS: { value: ExportCategory; label: string }[] = [
   { value: 'learning', label: 'Learning' },
 ]
 
+const INACTIVE_DAYS_THRESHOLD = 3
+
+function getLastEntryDate(
+  health: { local_date: string }[] | undefined,
+  finance: { local_date: string }[] | undefined,
+  productivity: { local_date: string }[] | undefined,
+  learning: { local_date: string }[] | undefined,
+): string | null {
+  const dates: string[] = []
+  for (const list of [health, finance, productivity, learning]) {
+    if (list?.length) list.forEach((e) => dates.push(e.local_date))
+  }
+  if (dates.length === 0) return null
+  return dates.sort()[dates.length - 1]
+}
+
+function daysSince(dateStr: string): number {
+  const then = new Date(dateStr)
+  const now = new Date()
+  then.setHours(0, 0, 0, 0)
+  now.setHours(0, 0, 0, 0)
+  return Math.floor((now.getTime() - then.getTime()) / (24 * 60 * 60 * 1000))
+}
+
 export const DashboardPage = () => {
   const toast = useToast()
   const [exporting, setExporting] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted())
+  const [inactiveReminderDismissed, setInactiveReminderDismissed] = useState(false)
   const health = useQuery({
     queryKey: ['health'],
     queryFn: () => fetchEntries<HealthEntry>('health'),
@@ -169,11 +195,29 @@ export const DashboardPage = () => {
   }
 
   const goalsProgress = goalsQuery.data?.progress ?? []
+  const lastEntryDate = getLastEntryDate(
+    health.data,
+    finance.data,
+    productivity.data,
+    learning.data,
+  )
+  const daysSinceLast = lastEntryDate === null ? null : daysSince(lastEntryDate)
+  const showInactiveReminder =
+    !showOnboarding &&
+    !inactiveReminderDismissed &&
+    !wasInactiveReminderDismissed() &&
+    (lastEntryDate === null || (daysSinceLast !== null && daysSinceLast > INACTIVE_DAYS_THRESHOLD))
 
   return (
     <div className="stack">
       {showOnboarding && (
         <OnboardingModal onDismiss={() => setShowOnboarding(false)} />
+      )}
+      {showInactiveReminder && (
+        <InactiveReminderModal
+          daysInactive={lastEntryDate === null ? null : daysSinceLast}
+          onDismiss={() => setInactiveReminderDismissed(true)}
+        />
       )}
       {goalsProgress.length > 0 && (
         <section className="card">
