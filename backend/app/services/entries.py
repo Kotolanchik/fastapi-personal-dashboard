@@ -28,7 +28,16 @@ def apply_update(entry, payload):
         setattr(entry, key, value)
 
 
-def list_entries(query, model, start_date: Optional[date], end_date: Optional[date], limit: int):
+def list_entries(
+    query,
+    model,
+    start_date: Optional[date],
+    end_date: Optional[date],
+    limit: int,
+    user_id: Optional[int] = None,
+):
+    if user_id is not None:
+        query = query.filter(model.user_id == user_id)
     if start_date:
         query = query.filter(model.local_date >= start_date)
     if end_date:

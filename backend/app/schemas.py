@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, conint, confloat
+from pydantic import BaseModel, EmailStr, Field, conint, confloat
 
 
 class TimestampBase(BaseModel):
@@ -44,7 +44,7 @@ class HealthEntryUpdate(BaseModel):
 
 
 class HealthEntryRead(TimestampRead, HealthEntryBase):
-    pass
+    user_id: int
 
 
 class FinanceEntryBase(TimestampBase):
@@ -72,7 +72,7 @@ class FinanceEntryUpdate(BaseModel):
 
 
 class FinanceEntryRead(TimestampRead, FinanceEntryBase):
-    pass
+    user_id: int
 
 
 class ProductivityEntryBase(TimestampBase):
@@ -96,7 +96,7 @@ class ProductivityEntryUpdate(BaseModel):
 
 
 class ProductivityEntryRead(TimestampRead, ProductivityEntryBase):
-    pass
+    user_id: int
 
 
 class LearningEntryBase(TimestampBase):
@@ -120,7 +120,38 @@ class LearningEntryUpdate(BaseModel):
 
 
 class LearningEntryRead(TimestampRead, LearningEntryBase):
-    pass
+    user_id: int
+
+
+class UserBase(BaseModel):
+    email: EmailStr
+    full_name: Optional[str] = None
+
+
+class UserCreate(UserBase):
+    password: str = Field(min_length=8, max_length=128)
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserRead(UserBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class Message(BaseModel):
+    status: str
 
 
 class CorrelationItem(BaseModel):

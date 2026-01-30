@@ -39,11 +39,22 @@ def _entries_to_df(entries, numeric_fields, sum_fields=None):
     return df.groupby("date", as_index=False).agg(agg)
 
 
-def build_daily_dataframe(db) -> pd.DataFrame:
-    health_entries = db.query(models.HealthEntry).all()
-    finance_entries = db.query(models.FinanceEntry).all()
-    productivity_entries = db.query(models.ProductivityEntry).all()
-    learning_entries = db.query(models.LearningEntry).all()
+def build_daily_dataframe(db, user_id: int | None = None) -> pd.DataFrame:
+    health_query = db.query(models.HealthEntry)
+    finance_query = db.query(models.FinanceEntry)
+    productivity_query = db.query(models.ProductivityEntry)
+    learning_query = db.query(models.LearningEntry)
+
+    if user_id is not None:
+        health_query = health_query.filter(models.HealthEntry.user_id == user_id)
+        finance_query = finance_query.filter(models.FinanceEntry.user_id == user_id)
+        productivity_query = productivity_query.filter(models.ProductivityEntry.user_id == user_id)
+        learning_query = learning_query.filter(models.LearningEntry.user_id == user_id)
+
+    health_entries = health_query.all()
+    finance_entries = finance_query.all()
+    productivity_entries = productivity_query.all()
+    learning_entries = learning_query.all()
 
     health_df = _entries_to_df(
         health_entries,
@@ -233,8 +244,8 @@ def generate_insights(df: pd.DataFrame) -> List[dict]:
     return insights
 
 
-def insights_payload(db):
-    df = build_daily_dataframe(db)
+def insights_payload(db, user_id: int | None = None):
+    df = build_daily_dataframe(db, user_id=user_id)
     return {
         "generated_at": datetime.utcnow(),
         "insights": generate_insights(df),

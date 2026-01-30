@@ -6,7 +6,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from ... import analytics, models
-from ..deps import get_db_session
+from ..deps import get_current_user, get_db_session
 
 router = APIRouter(tags=["export"])
 
@@ -24,12 +24,13 @@ def _entries_to_csv(entries, fieldnames):
 def export_csv(
     category: str = Query("daily", pattern="^(health|finance|productivity|learning|daily|all)$"),
     db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
     category = category.lower()
     filename = f"{category}.csv"
 
     if category in {"daily", "all"}:
-        df = analytics.build_daily_dataframe(db)
+        df = analytics.build_daily_dataframe(db, user_id=user.id)
         csv_body = df.to_csv(index=False)
         return Response(
             content=csv_body,
@@ -38,9 +39,14 @@ def export_csv(
         )
 
     if category == "health":
-        entries = db.query(models.HealthEntry).all()
+        entries = (
+            db.query(models.HealthEntry)
+            .filter(models.HealthEntry.user_id == user.id)
+            .all()
+        )
         fieldnames = [
             "id",
+            "user_id",
             "recorded_at",
             "local_date",
             "timezone",
@@ -53,9 +59,14 @@ def export_csv(
         ]
         csv_body = _entries_to_csv(entries, fieldnames)
     elif category == "finance":
-        entries = db.query(models.FinanceEntry).all()
+        entries = (
+            db.query(models.FinanceEntry)
+            .filter(models.FinanceEntry.user_id == user.id)
+            .all()
+        )
         fieldnames = [
             "id",
+            "user_id",
             "recorded_at",
             "local_date",
             "timezone",
@@ -68,9 +79,14 @@ def export_csv(
         ]
         csv_body = _entries_to_csv(entries, fieldnames)
     elif category == "productivity":
-        entries = db.query(models.ProductivityEntry).all()
+        entries = (
+            db.query(models.ProductivityEntry)
+            .filter(models.ProductivityEntry.user_id == user.id)
+            .all()
+        )
         fieldnames = [
             "id",
+            "user_id",
             "recorded_at",
             "local_date",
             "timezone",
@@ -81,9 +97,14 @@ def export_csv(
         ]
         csv_body = _entries_to_csv(entries, fieldnames)
     else:
-        entries = db.query(models.LearningEntry).all()
+        entries = (
+            db.query(models.LearningEntry)
+            .filter(models.LearningEntry.user_id == user.id)
+            .all()
+        )
         fieldnames = [
             "id",
+            "user_id",
             "recorded_at",
             "local_date",
             "timezone",

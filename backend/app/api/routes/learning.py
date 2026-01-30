@@ -6,14 +6,19 @@ from sqlalchemy.orm import Session
 
 from ... import models, schemas
 from ...services.entries import apply_timestamp, apply_update, list_entries
-from ..deps import get_db_session
+from ..deps import get_current_user, get_db_session
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 
 
 @router.post("", response_model=schemas.LearningEntryRead)
-def create_learning(entry: schemas.LearningEntryCreate, db: Session = Depends(get_db_session)):
+def create_learning(
+    entry: schemas.LearningEntryCreate,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
     record = models.LearningEntry(
+        user_id=user.id,
         study_hours=entry.study_hours,
         topics=entry.topics,
         projects=entry.projects,
@@ -32,9 +37,17 @@ def list_learning(
     end_date: Optional[date] = Query(None),
     limit: int = Query(200, ge=1, le=1000),
     db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
     query = db.query(models.LearningEntry)
-    query = list_entries(query, models.LearningEntry, start_date, end_date, limit)
+    query = list_entries(
+        query,
+        models.LearningEntry,
+        start_date,
+        end_date,
+        limit,
+        user_id=user.id,
+    )
     return query.all()
 
 
@@ -43,8 +56,13 @@ def update_learning(
     entry_id: int,
     payload: schemas.LearningEntryUpdate,
     db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
-    record = db.get(models.LearningEntry, entry_id)
+    record = (
+        db.query(models.LearningEntry)
+        .filter(models.LearningEntry.id == entry_id, models.LearningEntry.user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Learning entry not found")
     apply_update(record, payload)
@@ -54,8 +72,16 @@ def update_learning(
 
 
 @router.delete("/{entry_id}")
-def delete_learning(entry_id: int, db: Session = Depends(get_db_session)):
-    record = db.get(models.LearningEntry, entry_id)
+def delete_learning(
+    entry_id: int,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    record = (
+        db.query(models.LearningEntry)
+        .filter(models.LearningEntry.id == entry_id, models.LearningEntry.user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Learning entry not found")
     db.delete(record)

@@ -1,9 +1,13 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
+alembic
 pandas
 numpy
 scikit-learn
 statsmodels
 streamlit
 requests
+passlib[bcrypt]
+python-jose[cryptography]
+email-validator

@@ -27,7 +27,8 @@ def on_startup():
         data_dir = os.path.dirname(path)
         if data_dir:
             os.makedirs(data_dir, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
+    if settings.auto_create_tables:
+        Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")

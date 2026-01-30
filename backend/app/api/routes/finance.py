@@ -6,14 +6,19 @@ from sqlalchemy.orm import Session
 
 from ... import models, schemas
 from ...services.entries import apply_timestamp, apply_update, list_entries
-from ..deps import get_db_session
+from ..deps import get_current_user, get_db_session
 
 router = APIRouter(prefix="/finance", tags=["finance"])
 
 
 @router.post("", response_model=schemas.FinanceEntryRead)
-def create_finance(entry: schemas.FinanceEntryCreate, db: Session = Depends(get_db_session)):
+def create_finance(
+    entry: schemas.FinanceEntryCreate,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
     record = models.FinanceEntry(
+        user_id=user.id,
         income=entry.income,
         expense_food=entry.expense_food,
         expense_transport=entry.expense_transport,
@@ -34,9 +39,17 @@ def list_finance(
     end_date: Optional[date] = Query(None),
     limit: int = Query(200, ge=1, le=1000),
     db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
     query = db.query(models.FinanceEntry)
-    query = list_entries(query, models.FinanceEntry, start_date, end_date, limit)
+    query = list_entries(
+        query,
+        models.FinanceEntry,
+        start_date,
+        end_date,
+        limit,
+        user_id=user.id,
+    )
     return query.all()
 
 
@@ -45,8 +58,13 @@ def update_finance(
     entry_id: int,
     payload: schemas.FinanceEntryUpdate,
     db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
-    record = db.get(models.FinanceEntry, entry_id)
+    record = (
+        db.query(models.FinanceEntry)
+        .filter(models.FinanceEntry.id == entry_id, models.FinanceEntry.user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Finance entry not found")
     apply_update(record, payload)
@@ -56,8 +74,16 @@ def update_finance(
 
 
 @router.delete("/{entry_id}")
-def delete_finance(entry_id: int, db: Session = Depends(get_db_session)):
-    record = db.get(models.FinanceEntry, entry_id)
+def delete_finance(
+    entry_id: int,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    record = (
+        db.query(models.FinanceEntry)
+        .filter(models.FinanceEntry.id == entry_id, models.FinanceEntry.user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Finance entry not found")
     db.delete(record)

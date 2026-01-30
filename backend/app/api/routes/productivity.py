@@ -6,16 +6,19 @@ from sqlalchemy.orm import Session
 
 from ... import models, schemas
 from ...services.entries import apply_timestamp, apply_update, list_entries
-from ..deps import get_db_session
+from ..deps import get_current_user, get_db_session
 
 router = APIRouter(prefix="/productivity", tags=["productivity"])
 
 
 @router.post("", response_model=schemas.ProductivityEntryRead)
 def create_productivity(
-    entry: schemas.ProductivityEntryCreate, db: Session = Depends(get_db_session)
+    entry: schemas.ProductivityEntryCreate,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
     record = models.ProductivityEntry(
+        user_id=user.id,
         deep_work_hours=entry.deep_work_hours,
         tasks_completed=entry.tasks_completed,
         focus_level=entry.focus_level,
@@ -34,9 +37,17 @@ def list_productivity(
     end_date: Optional[date] = Query(None),
     limit: int = Query(200, ge=1, le=1000),
     db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
     query = db.query(models.ProductivityEntry)
-    query = list_entries(query, models.ProductivityEntry, start_date, end_date, limit)
+    query = list_entries(
+        query,
+        models.ProductivityEntry,
+        start_date,
+        end_date,
+        limit,
+        user_id=user.id,
+    )
     return query.all()
 
 
@@ -45,8 +56,16 @@ def update_productivity(
     entry_id: int,
     payload: schemas.ProductivityEntryUpdate,
     db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
 ):
-    record = db.get(models.ProductivityEntry, entry_id)
+    record = (
+        db.query(models.ProductivityEntry)
+        .filter(
+            models.ProductivityEntry.id == entry_id,
+            models.ProductivityEntry.user_id == user.id,
+        )
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Productivity entry not found")
     apply_update(record, payload)
@@ -56,8 +75,19 @@ def update_productivity(
 
 
 @router.delete("/{entry_id}")
-def delete_productivity(entry_id: int, db: Session = Depends(get_db_session)):
-    record = db.get(models.ProductivityEntry, entry_id)
+def delete_productivity(
+    entry_id: int,
+    db: Session = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    record = (
+        db.query(models.ProductivityEntry)
+        .filter(
+            models.ProductivityEntry.id == entry_id,
+            models.ProductivityEntry.user_id == user.id,
+        )
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Productivity entry not found")
     db.delete(record)
