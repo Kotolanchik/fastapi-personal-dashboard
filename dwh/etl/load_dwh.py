@@ -11,12 +11,18 @@ from dwh.database import SessionLocal as DwhSession
 
 def ensure_dim_user(dwh_db: Session, app_user: app_models.User, cache: dict[int, dwh_models.DimUser]):
     if app_user.id in cache:
-        return cache[app_user.id]
+        dim = cache[app_user.id]
+        if dim.role != app_user.role:
+            dim.role = app_user.role
+            dwh_db.commit()
+            dwh_db.refresh(dim)
+        return dim
     dim = dwh_models.DimUser(
         user_id=app_user.id,
         email=app_user.email,
         full_name=app_user.full_name,
         created_at=app_user.created_at,
+        role=app_user.role,
     )
     dwh_db.add(dim)
     dwh_db.commit()

@@ -1,0 +1,13 @@
+name: personal_dashboard
+version: "1.0"
+profile: personal_dashboard
+
+model-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+models:
+  personal_dashboard:
+    +materialized: table

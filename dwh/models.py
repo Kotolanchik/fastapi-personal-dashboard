@@ -30,6 +30,7 @@ class DimUser(Base):
     email = Column(String(255), nullable=False, unique=True)
     full_name = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
+    role = Column(String(32), nullable=False, default="user")
 
 
 class FactHealth(Base):

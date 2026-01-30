@@ -14,3 +14,7 @@ data/
 frontend/.streamlit/
 *.db
 .ruff_cache/
+dwh/dbt/target/
+dwh/dbt/logs/
+dwh/duckdb/*.duckdb
+dwh/parquet/
