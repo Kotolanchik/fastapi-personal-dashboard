@@ -1,0 +1,20 @@
+{{- if .Values.migrateJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "personal-dashboard.fullname" . }}-migrate
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
+          imagePullPolicy: IfNotPresent
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "personal-dashboard.fullname" . }}-config
+            - secretRef:
+                name: {{ include "personal-dashboard.fullname" . }}-secrets
+{{- end }}

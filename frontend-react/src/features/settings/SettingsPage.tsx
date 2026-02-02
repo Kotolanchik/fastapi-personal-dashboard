@@ -1,0 +1,425 @@
+import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+
+import { useAuth } from '../auth/AuthContext'
+import { changePassword, updateProfile } from '../../shared/api/auth'
+import { useToast } from '../../shared/components/Toast'
+import { downloadCsv, type ExportCategory } from '../../shared/api/export'
+import {
+  createGoal,
+  deleteGoal,
+  getGoals,
+  GOAL_SPHERES,
+  GOAL_METRICS_BY_SPHERE,
+  type Goal,
+  type GoalProgress,
+} from '../../shared/api/goals'
+import { listLearningCourses, type LearningCourse } from '../../shared/api/learning'
+import { usePageTitle } from '../../shared/hooks/usePageTitle'
+import { getErrorMessage, parseValidationErrors } from '../../shared/utils/validation'
+
+const COMMON_TIMEZONES = [
+  'UTC',
+  'Europe/Moscow',
+  'Europe/London',
+  'Europe/Berlin',
+  'America/New_York',
+  'America/Los_Angeles',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+]
+
+export const SettingsPage = () => {
+  const { t } = useTranslation()
+  usePageTitle(t('nav.settings'))
+  const { user, refreshUser } = useAuth()
+  const toast = useToast()
+  const [fullName, setFullName] = useState(user?.full_name ?? '')
+  const [defaultTimezone, setDefaultTimezone] = useState(user?.default_timezone ?? 'UTC')
+  const [notificationEmail, setNotificationEmail] = useState(user?.notification_email ?? '')
+  const [emailReminders, setEmailReminders] = useState(user?.notification_preferences?.email_reminders ?? false)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({})
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
+  const [exporting, setExporting] = useState(false)
+  const [goalTitle, setGoalTitle] = useState('')
+  const [goalSphere, setGoalSphere] = useState('health')
+  const [goalTargetMetric, setGoalTargetMetric] = useState('sleep_hours')
+  const [goalTargetValue, setGoalTargetValue] = useState<string>('')
+  const [goalDeadline, setGoalDeadline] = useState<string>('')
+  const [goalCourseId, setGoalCourseId] = useState<number | null>(null)
+  const [goalSaving, setGoalSaving] = useState(false)
+  const queryClient = useQueryClient()
+  const goalsQuery = useQuery({ queryKey: ['goals'], queryFn: getGoals })
+  const coursesQuery = useQuery({ queryKey: ['learning-courses'], queryFn: listLearningCourses })
+  const courses = coursesQuery.data ?? []
+
+  const goals = goalsQuery.data?.goals ?? []
+  const activeGoals = goals.filter((g) => !g.archived)
+  const progress = goalsQuery.data?.progress ?? []
+  const progressByGoalId = progress.reduce<Record<number, GoalProgress>>((acc, p) => {
+    acc[p.goal_id] = p
+    return acc
+  }, {})
+  const goalMetrics = GOAL_METRICS_BY_SPHERE[goalSphere] ?? []
+
+  const handleAddGoal = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!goalTitle.trim()) return
+    setGoalSaving(true)
+    try {
+      await createGoal({
+        sphere: goalSphere,
+        title: goalTitle.trim(),
+        target_value: goalTargetMetric === 'course_complete' ? 1 : (goalTargetValue ? parseFloat(goalTargetValue) : null),
+        target_metric: goalTargetMetric || null,
+        course_id: goalSphere === 'learning' && goalTargetMetric === 'course_complete' ? goalCourseId : null,
+        deadline: goalDeadline ? goalDeadline : null,
+      })
+      setGoalTitle('')
+      setGoalTargetValue('')
+      setGoalDeadline('')
+      setGoalCourseId(null)
+      const metrics = GOAL_METRICS_BY_SPHERE[goalSphere]
+      setGoalTargetMetric(metrics?.[0] ?? '')
+      queryClient.invalidateQueries({ queryKey: ['goals'] })
+      toast.success(t('settings.goalAdded'))
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setGoalSaving(false)
+    }
+  }
+
+  const handleDeleteGoal = async (goal: Goal) => {
+    try {
+      await deleteGoal(goal.id)
+      queryClient.invalidateQueries({ queryKey: ['goals'] })
+      toast.success(t('settings.goalRemoved'))
+    } catch {
+      toast.error(t('settings.failedToRemoveGoal'))
+    }
+  }
+
+  useEffect(() => {
+    setFullName(user?.full_name ?? '')
+    setDefaultTimezone(user?.default_timezone ?? 'UTC')
+  }, [user])
+
+  const handleProfileSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setProfileErrors({})
+    setProfileSaving(true)
+    try {
+      await updateProfile({
+        full_name: fullName || null,
+        default_timezone: defaultTimezone || 'UTC',
+        notification_email: notificationEmail.trim() || null,
+        notification_preferences: { email_reminders: emailReminders },
+      })
+      await refreshUser()
+      toast.success(t('settings.profileSaved'))
+    } catch (err) {
+      const errors = parseValidationErrors(err)
+      setProfileErrors(errors)
+      if (Object.keys(errors).length === 0) toast.error(getErrorMessage(err))
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  const handlePasswordSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setPasswordErrors({})
+    if (newPassword !== confirmPassword) {
+      setPasswordErrors({ new_password: t('settings.passwordsDoNotMatch'), confirm_password: t('settings.passwordsDoNotMatch') })
+      return
+    }
+    setPasswordSaving(true)
+    try {
+      await changePassword({ current_password: currentPassword, new_password: newPassword })
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      toast.success(t('settings.passwordChanged'))
+    } catch (err) {
+      const errors = parseValidationErrors(err)
+      setPasswordErrors(errors)
+      if (Object.keys(errors).length === 0) toast.error(getErrorMessage(err))
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
+
+  const handleDownloadCsv = async (category: ExportCategory = 'all') => {
+    setExporting(true)
+    try {
+      await downloadCsv(category)
+      toast.success(t('dashboard.csvDownloaded'))
+    } catch {
+      toast.error(t('dashboard.downloadFailed'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  return (
+    <div className="stack">
+      <div className="card">
+        <h3>{t('settings.profile')}</h3>
+        <p className="muted">{t('settings.profileSubtitle')}</p>
+        <form onSubmit={handleProfileSubmit} className="form-grid">
+          <label>
+            {t('common.name')}
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => {
+                setFullName(e.target.value)
+                setProfileErrors((p) => ({ ...p, full_name: '' }))
+              }}
+              aria-invalid={!!profileErrors.full_name}
+            />
+            {profileErrors.full_name ? <div className="field-error">{profileErrors.full_name}</div> : null}
+          </label>
+          <label>
+            {t('settings.defaultTimezone')}
+            <select
+              value={defaultTimezone}
+              onChange={(e) => {
+                setDefaultTimezone(e.target.value)
+                setProfileErrors((p) => ({ ...p, default_timezone: '' }))
+              }}
+              aria-invalid={!!profileErrors.default_timezone}
+            >
+              {COMMON_TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>
+                  {tz}
+                </option>
+              ))}
+            </select>
+            {profileErrors.default_timezone ? (
+              <div className="field-error">{profileErrors.default_timezone}</div>
+            ) : null}
+          </label>
+          <label>
+            {t('settings.notificationEmail')}
+            <input
+              type="email"
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+              placeholder="email@example.com"
+            />
+            <span className="muted small">{t('settings.notificationEmailHint')}</span>
+          </label>
+          <label className="flex gap" style={{ alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              checked={emailReminders}
+              onChange={(e) => setEmailReminders(e.target.checked)}
+            />
+            <span>{t('settings.emailReminders')}</span>
+          </label>
+          <div className="form-actions">
+            <button type="submit" disabled={profileSaving}>
+              {profileSaving ? t('common.saving') : t('common.save')}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="card">
+        <h3>{t('settings.goalsTitle')}</h3>
+        <p className="muted">{t('settings.goalsSubtitle')}</p>
+        {activeGoals.length > 0 && (
+          <ul className="list" style={{ marginBottom: '1rem' }}>
+            {activeGoals.map((g) => {
+              const prog = progressByGoalId[g.id]
+              return (
+                <li key={g.id} className="flex-between">
+                  <span>
+                    <strong>{g.title}</strong> ({g.sphere})
+                    {prog?.progress_pct != null && (
+                      <span className="muted"> — {prog.progress_pct.toFixed(0)}%</span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() => handleDeleteGoal(g)}
+                    aria-label={t('settings.deleteGoal', { title: g.title })}
+                  >
+                    {t('common.remove')}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {activeGoals.length < 5 && (
+          <form onSubmit={handleAddGoal} className="form-grid">
+            <label>
+              {t('settings.goalTitle')}
+              <input
+                type="text"
+                value={goalTitle}
+                onChange={(e) => setGoalTitle(e.target.value)}
+                placeholder={t('settings.goalTitlePlaceholder')}
+                maxLength={255}
+              />
+            </label>
+            <label>
+              {t('settings.sphere')}
+              <select
+                value={goalSphere}
+                onChange={(e) => {
+                  setGoalSphere(e.target.value)
+                  const metrics = GOAL_METRICS_BY_SPHERE[e.target.value]
+                  setGoalTargetMetric(metrics?.[0] ?? '')
+                }}
+              >
+                {GOAL_SPHERES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t('goals.targetMetric')}
+              <select
+                value={goalTargetMetric}
+                onChange={(e) => setGoalTargetMetric(e.target.value)}
+              >
+                {goalMetrics.map((m) => (
+                  <option key={m} value={m}>
+                    {t(`entries.labels.${goalSphere}.${m}`) || m}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {goalTargetMetric !== 'course_complete' && (
+              <label>
+                {t('settings.targetValueOptional')}
+                <input
+                  type="number"
+                  step="any"
+                  value={goalTargetValue}
+                  onChange={(e) => setGoalTargetValue(e.target.value)}
+                  placeholder={t('settings.targetValuePlaceholder')}
+                />
+              </label>
+            )}
+            {goalSphere === 'learning' && goalTargetMetric === 'course_complete' && (
+              <label>
+                {t('goals.course')}
+                <select
+                  value={goalCourseId ?? ''}
+                  onChange={(e) => setGoalCourseId(e.target.value ? Number(e.target.value) : null)}
+                  required
+                >
+                  <option value="">—</option>
+                  {courses.map((c: LearningCourse) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label>
+              {t('goals.deadline')}
+              <input
+                type="date"
+                value={goalDeadline}
+                onChange={(e) => setGoalDeadline(e.target.value)}
+              />
+            </label>
+            <div className="form-actions">
+              <button type="submit" disabled={goalSaving || !goalTitle.trim()}>
+                {goalSaving ? '…' : t('settings.addGoal')}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      <div className="card">
+        <h3>{t('settings.changePassword')}</h3>
+        <form onSubmit={handlePasswordSubmit} className="form-grid">
+          <label>
+            {t('settings.currentPassword')}
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value)
+                setPasswordErrors((p) => ({ ...p, current_password: '' }))
+              }}
+              required
+              aria-invalid={!!passwordErrors.current_password}
+            />
+            {passwordErrors.current_password ? (
+              <div className="field-error">{passwordErrors.current_password}</div>
+            ) : null}
+          </label>
+          <label>
+            {t('settings.newPassword')}
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value)
+                setPasswordErrors((p) => ({ ...p, new_password: '' }))
+              }}
+              required
+              minLength={8}
+              aria-invalid={!!passwordErrors.new_password}
+            />
+            {passwordErrors.new_password ? (
+              <div className="field-error">{passwordErrors.new_password}</div>
+            ) : null}
+          </label>
+          <label>
+            {t('settings.confirmNewPassword')}
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value)
+                setPasswordErrors((p) => ({ ...p, confirm_password: '' }))
+              }}
+              required
+              minLength={8}
+              aria-invalid={!!passwordErrors.confirm_password}
+            />
+            {passwordErrors.confirm_password ? (
+              <div className="field-error">{passwordErrors.confirm_password}</div>
+            ) : null}
+          </label>
+          <div className="form-actions">
+            <button type="submit" disabled={passwordSaving}>
+              {passwordSaving ? t('common.saving') : t('settings.changePassword')}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="card">
+        <h3>{t('settings.exportData')}</h3>
+        <p className="muted">{t('dashboard.exportSubtitle')}</p>
+        <div className="form-actions">
+          <button type="button" disabled={exporting} onClick={() => handleDownloadCsv('all')}>
+            {exporting ? '…' : t('dashboard.downloadCsv')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

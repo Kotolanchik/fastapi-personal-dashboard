@@ -1,0 +1,7 @@
+personal_dashboard:
+  outputs:
+    dev:
+      type: duckdb
+      path: dwh/duckdb/analytics.duckdb
+      threads: 4
+  target: dev

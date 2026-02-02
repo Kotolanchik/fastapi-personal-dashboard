@@ -1,0 +1,26 @@
+backend:
+  image: ghcr.io/your-org/personal-dashboard-backend
+  tag: latest
+  replicas: 2
+
+frontend:
+  image: ghcr.io/your-org/personal-dashboard-frontend
+  tag: latest
+  replicas: 2
+
+config:
+  corsOrigins: https://your-frontend-domain
+  apiUrl: http://backend:8000
+  cacheTtlSeconds: 300
+
+secrets:
+  databaseUrl: postgresql+psycopg2://user:pass@your-managed-postgres:5432/dashboard
+  redisUrl: redis://:password@your-managed-redis:6379/0
+  secretKey: change-me
+
+ingress:
+  enabled: true
+  host: dashboard.example.com
+
+migrateJob:
+  enabled: true

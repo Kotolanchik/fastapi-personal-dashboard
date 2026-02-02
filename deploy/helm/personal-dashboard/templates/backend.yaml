@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "personal-dashboard.fullname" . }}-backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "personal-dashboard.fullname" . }}-backend
+  template:
+    metadata:
+      labels:
+        app: {{ include "personal-dashboard.fullname" . }}-backend
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: {{ include "personal-dashboard.fullname" . }}-config
+            - secretRef:
+                name: {{ include "personal-dashboard.fullname" . }}-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "personal-dashboard.fullname" . }}-backend
+spec:
+  selector:
+    app: {{ include "personal-dashboard.fullname" . }}-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
